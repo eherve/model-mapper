@@ -1,0 +1,23 @@
+{
+  "name": "model-mapper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eherve/model-mapper.git"
+  },
+  "author": "Éric Hervé",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eherve/model-mapper/issues"
+  },
+  "homepage": "https://github.com/eherve/model-mapper#readme",
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "moment": "^2.24.0"
+  }
+}
