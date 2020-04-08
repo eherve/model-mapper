@@ -2,9 +2,18 @@
   "name": "model-mapper",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./lib/main.js",
+  "types": "./lib/main.d.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "lib/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rm -f lib/* && tsc -d",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -19,5 +28,9 @@
   "dependencies": {
     "lodash": "^4.17.15",
     "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.149",
+    "typescript": "^3.8.3"
   }
 }

@@ -76,7 +76,7 @@ export class ModelMapper<T> {
 
       if (Array.isArray(mapping.type)) {
         this._target[property] = (get(source, mapping.source) || []).
-          map((value: any) => this.getValue(mapping.type[0], value));
+          map((value: any) => this.getValue((mapping.type as Type[])[0], value));
       } else {
         this._target[property] = this.getValue(mapping.type, get(source, mapping.source));
       }
@@ -89,7 +89,7 @@ export class ModelMapper<T> {
         this._target._initials = this._target._initials || {};
         this._target._initials[property] = this._target[property] && this._target[property].clone ?
           this._target[property].clone() :
-          cloneDeep(this[property]);
+          cloneDeep(this._target[property]);
       }
     });
 
@@ -100,13 +100,13 @@ export class ModelMapper<T> {
 
   public serialize(source?: T): any {
     if (!source) { return; }
-    const res = {};
+    const res: any = {};
 
     Object.keys(this._propertyMapping).forEach(property => {
       const mapping = this._propertyMapping[property];
       if (Array.isArray(mapping.type)) {
         res[mapping.source] = (get(source, property) || []).
-          map((value: any) => this.getSerializeValue(mapping.type[0], value));
+          map((value: any) => this.getSerializeValue((mapping.type as Type[])[0], value));
       } else {
         res[mapping.source] = this.getSerializeValue(mapping.type, get(source, property));
       }
