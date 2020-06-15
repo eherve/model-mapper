@@ -82,7 +82,12 @@ export class ModelMapper<T> {
       }
 
       if (mapping.default !== undefined && this._target[property] === undefined) {
-        this._target[property] = mapping.default;
+        if (Array.isArray(mapping.type)) {
+          this._target[property] = mapping.default.map((value: any) =>
+            this.getValue((mapping.type as Type[])[0], value));
+        } else {
+          this._target[property] = this.getValue(mapping.type, mapping.default);
+        }
       }
 
       if (mapping.trace) {
