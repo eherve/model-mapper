@@ -75,18 +75,22 @@ export class ModelMapper<T> {
       const mapping = this._propertyMapping[property];
 
       if (Array.isArray(mapping.type)) {
-        this._target[property] = (get(source, mapping.source) || []).
-          map((value: any) => this.getValue((mapping.type as Type[])[0], value));
+        const arr = get(source, mapping.source);
+        this._target[property] = Array.isArray(arr) ?
+          arr.map((value: any) => this.getValue((mapping.type as Type[])[0], value)) :
+          arr === null ? null : undefined;
       } else {
         this._target[property] = this.getValue(mapping.type, get(source, mapping.source));
       }
 
       if (mapping.default !== undefined && this._target[property] === undefined) {
+        const d = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
         if (Array.isArray(mapping.type)) {
-          this._target[property] = mapping.default.map((value: any) =>
-            this.getValue((mapping.type as Type[])[0], value));
+          this._target[property] = Array.isArray(d) ?
+            d.map((value: any) => this.getValue((mapping.type as Type[])[0], value)) :
+            d === null ? null : undefined;
         } else {
-          this._target[property] = this.getValue(mapping.type, mapping.default);
+          this._target[property] = this.getValue(mapping.type, d);
         }
       }
 
