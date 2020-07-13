@@ -117,7 +117,10 @@ export class ModelMapper<T> {
         res[mapping.source] = (get(source, property) || []).
           map((value: any) => this.getSerializeValue((mapping.type as Type[])[0], value));
       } else {
-        res[mapping.source] = this.getSerializeValue(mapping.type, get(source, property));
+        const value = get(source, property);
+        if (value !== undefined) {
+          res[mapping.source] = this.getSerializeValue(mapping.type, value);
+        }
       }
     });
 
@@ -125,6 +128,7 @@ export class ModelMapper<T> {
   }
 
   private getSerializeValue(type: Type, value: any) {
+    if (value === null) { return null; }
     if (type === 'Moment') {
       return value.toISOString();
     }
