@@ -84,14 +84,7 @@ export class ModelMapper<T> {
       }
 
       if (mapping.default !== undefined && this._target[property] === undefined) {
-        const d = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
-        if (Array.isArray(mapping.type)) {
-          this._target[property] = Array.isArray(d) ?
-            d.map((value: any) => this.getValue((mapping.type as Type[])[0], value)) :
-            d === null ? null : undefined;
-        } else {
-          this._target[property] = this.getValue(mapping.type, d);
-        }
+        this._target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
       }
 
       if (mapping.trace) {
@@ -155,11 +148,11 @@ export class ModelMapper<T> {
   }
 
   private buildMoment(value: any): moment.Moment {
-    return value ? moment.isMoment(value) ? value : moment(value) : undefined;
+    return value ? (moment.isMoment(value) ? value : moment(value)) : undefined;
   }
 
   private buildMomentDuration(value: any): moment.Duration {
-    return value ? moment.isDuration(value) ? value : moment.duration(value) : undefined;
+    return value ? (moment.isDuration(value) ? value : moment.duration(value)) : undefined;
   }
 
 }
