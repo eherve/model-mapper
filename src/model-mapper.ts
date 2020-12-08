@@ -61,7 +61,7 @@ export class ModelMapper<T> {
       return this;
     };
 
-    this._target.merge = function (source: any, resetDirty = false): T {
+    this._target.merge = function (source: any, resetDirty: boolean = false): T {
       merge(this, source);
       if (resetDirty) { this.resetDirty(); }
       return this;
