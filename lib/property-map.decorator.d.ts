@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 export declare type Type = 'Moment' | 'Moment.Duration' | (new () => any);
 export interface IOptions {
     source?: string;
@@ -5,4 +6,4 @@ export interface IOptions {
     trace?: boolean;
     type?: Type | Type[];
 }
-export declare function propertyMap(options?: IOptions): (target: any, propertyKey: string) => void;
+export declare function propertyMap(options?: IOptions): PropertyDecorator;

@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 export interface IModelMapper {
     _initials?: {
         [property: string]: any;
@@ -9,8 +10,8 @@ export interface IModelMapper {
     merge?(source: any, resetDirty?: boolean): this;
 }
 export declare class ModelMapper<T> {
-    private _target;
-    private _propertyMapping;
+    private target;
+    private propertyMapping;
     constructor(type: new () => T);
     map(source?: any): T;
     serialize(source?: T): any;

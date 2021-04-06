@@ -1,6 +1,7 @@
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
+import 'reflect-metadata';
 import { isEqual, cloneDeep, get, merge } from 'lodash';
-import * as moment from 'moment';
+import moment from 'moment';
 import { IOptions, Type } from './property-map.decorator';
 
 export interface IModelMapper {
@@ -21,39 +22,39 @@ export interface IModelMapper {
 
 export class ModelMapper<T> {
 
-  private _target: any;
-  private _propertyMapping: { [key: string]: IOptions };
+  private target: any;
+  private propertyMapping: { [key: string]: IOptions };
 
   constructor(type: new () => T) {
-    this._target = new type();
-    this._propertyMapping = this._target.constructor._propertyMap || {};
+    this.target = new type();
+    this.propertyMapping = Reflect.getOwnMetadata('propertyMap', Object.getPrototypeOf(this.target)) || {};
     const self = this;
 
-    this._target.getPropertySource = function (property: string): string | string[] {
-      const mapping = self._propertyMapping[property];
+    this.target.getPropertySource = function (property: string): string | string[] {
+      const mapping = self.propertyMapping[property];
       return mapping ? mapping.source : null;
     };
 
-    this._target.isPropertyDirty = function (property: string): boolean {
-      const mapping = self._propertyMapping[property];
+    this.target.isPropertyDirty = function (property: string): boolean {
+      const mapping = self.propertyMapping[property];
       if (!mapping || !mapping.trace) { return null; }
       return this[property].equals ? this[property].equals(this._initials[property]) :
         !isEqual(this[property], this._initials[property]);
     };
 
-    this._target.getDirtyProperties = function (): string[] {
+    this.target.getDirtyProperties = function (): string[] {
       const properties: string[] = [];
-      for (const property in self._propertyMapping) {
-        if (self._propertyMapping.hasOwnProperty(property)) {
+      for (const property in self.propertyMapping) {
+        if (self.propertyMapping.hasOwnProperty(property)) {
           if (this.isPropertyDirty(property)) { properties.push(property); }
         }
       }
       return properties;
     };
 
-    this._target.resetDirty = function (): T {
-      Object.keys(self._propertyMapping).forEach(key => {
-        const mapping = self._propertyMapping[key];
+    this.target.resetDirty = function (): T {
+      Object.keys(self.propertyMapping).forEach(key => {
+        const mapping = self.propertyMapping[key];
         if (mapping.trace) {
           this._initials[key] = this[key].clone ? this[key].clone() : cloneDeep(this[key]);
         }
@@ -61,7 +62,7 @@ export class ModelMapper<T> {
       return this;
     };
 
-    this._target.merge = function (source: any, resetDirty: boolean = false): T {
+    this.target.merge = function (source: any, resetDirty: boolean = false): T {
       merge(this, source);
       if (resetDirty) { this.resetDirty(); }
       return this;
@@ -71,41 +72,41 @@ export class ModelMapper<T> {
   public map(source?: any): T {
     if (!source) { return; }
 
-    Object.keys(this._propertyMapping).forEach(property => {
-      const mapping = this._propertyMapping[property];
+    Object.keys(this.propertyMapping).forEach(property => {
+      const mapping = this.propertyMapping[property];
 
       if (Array.isArray(mapping.type)) {
         const arr = get(source, mapping.source);
-        this._target[property] = Array.isArray(arr) ?
+        this.target[property] = Array.isArray(arr) ?
           arr.map((value: any) => this.getValue((mapping.type as Type[])[0], value)) :
           arr === null ? null : undefined;
       } else {
-        this._target[property] = this.getValue(mapping.type, get(source, mapping.source));
+        this.target[property] = this.getValue(mapping.type, get(source, mapping.source));
       }
 
-      if (mapping.default !== undefined && this._target[property] === undefined) {
-        this._target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
+      if (mapping.default !== undefined && this.target[property] === undefined) {
+        this.target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
       }
 
       if (mapping.trace) {
-        this._target._initials = this._target._initials || {};
-        this._target._initials[property] = this._target[property] && this._target[property].clone ?
-          this._target[property].clone() :
-          cloneDeep(this._target[property]);
+        this.target._initials = this.target._initials || {};
+        this.target._initials[property] = this.target[property] && this.target[property].clone ?
+          this.target[property].clone() :
+          cloneDeep(this.target[property]);
       }
     });
 
-    if (typeof this._target.afterMapping === 'function') { this._target.afterMapping(); }
+    if (typeof this.target.afterMapping === 'function') { this.target.afterMapping(); }
 
-    return this._target;
+    return this.target;
   }
 
   public serialize(source?: T): any {
     if (!source) { return; }
     const res: any = {};
 
-    Object.keys(this._propertyMapping).forEach(property => {
-      const mapping = this._propertyMapping[property];
+    Object.keys(this.propertyMapping).forEach(property => {
+      const mapping = this.propertyMapping[property];
       if (Array.isArray(mapping.type)) {
         res[mapping.source] = (get(source, property) || []).
           map((value: any) => this.getSerializeValue((mapping.type as Type[])[0], value));
