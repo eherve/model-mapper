@@ -1,7 +1,7 @@
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
 import 'reflect-metadata';
 import { isEqual, cloneDeep, get, merge } from 'lodash';
-import moment from 'moment';
+import * as moment from 'moment';
 import { IOptions, Type } from './property-map.decorator';
 
 export interface IModelMapper {
