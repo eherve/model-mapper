@@ -22,8 +22,7 @@ export function propertyMap(options: IOptions = {}): PropertyDecorator {
       source: options.source || propertyKey,
       default: options.default,
       trace: options.trace,
-      type: options.type
+      type: options.type,
     };
   };
 }
-

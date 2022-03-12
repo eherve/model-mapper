@@ -1,11 +1,10 @@
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
 import 'reflect-metadata';
-import { isEqual, cloneDeep, get, merge } from 'lodash';
+import { isEqual, cloneDeep, get, merge, split, isArray, map } from 'lodash';
 import * as moment from 'moment';
 import { IOptions, Type } from './property-map.decorator';
 
 export interface IModelMapper {
-
   _initials?: { [property: string]: any };
 
   getPropertySource?(property: string): string | string[];
@@ -17,11 +16,9 @@ export interface IModelMapper {
   resetDirty?(): this;
 
   merge?(source: any, resetDirty?: boolean): this;
-
 }
 
 export class ModelMapper<T> {
-
   private target: any;
   private propertyMapping: { [key: string]: IOptions };
 
@@ -37,16 +34,21 @@ export class ModelMapper<T> {
 
     this.target.isPropertyDirty = function (property: string): boolean {
       const mapping = self.propertyMapping[property];
-      if (!mapping || !mapping.trace) { return null; }
-      return this[property].equals ? this[property].equals(this._initials[property]) :
-        !isEqual(this[property], this._initials[property]);
+      if (!mapping || !mapping.trace) {
+        return null;
+      }
+      return this[property].equals
+        ? this[property].equals(this._initials[property])
+        : !isEqual(this[property], this._initials[property]);
     };
 
     this.target.getDirtyProperties = function (): string[] {
       const properties: string[] = [];
       for (const property in self.propertyMapping) {
         if (self.propertyMapping.hasOwnProperty(property)) {
-          if (this.isPropertyDirty(property)) { properties.push(property); }
+          if (this.isPropertyDirty(property)) {
+            properties.push(property);
+          }
         }
       }
       return properties;
@@ -64,24 +66,28 @@ export class ModelMapper<T> {
 
     this.target.merge = function (source: any, resetDirty: boolean = false): T {
       merge(this, source);
-      if (resetDirty) { this.resetDirty(); }
+      if (resetDirty) {
+        this.resetDirty();
+      }
       return this;
     };
   }
 
   public map(source?: any): T {
-    if (!source) { return; }
+    if (!source) return;
 
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
 
+      const value = this.buildValue(mapping.source, source);
       if (Array.isArray(mapping.type)) {
-        const arr = get(source, mapping.source);
-        this.target[property] = Array.isArray(arr) ?
-          arr.map((value: any) => this.getValue((mapping.type as Type[])[0], value)) :
-          arr === null ? null : undefined;
+        this.target[property] = Array.isArray(value)
+          ? value.map((v: any) => this.getValue((mapping.type as Type[])[0], v))
+          : value === null
+          ? null
+          : undefined;
       } else {
-        this.target[property] = this.getValue(mapping.type, get(source, mapping.source));
+        this.target[property] = this.getValue(mapping.type, value);
       }
 
       if (mapping.default !== undefined && this.target[property] === undefined) {
@@ -90,26 +96,45 @@ export class ModelMapper<T> {
 
       if (mapping.trace) {
         this.target._initials = this.target._initials || {};
-        this.target._initials[property] = this.target[property] && this.target[property].clone ?
-          this.target[property].clone() :
-          cloneDeep(this.target[property]);
+        this.target._initials[property] =
+          this.target[property] && this.target[property].clone
+            ? this.target[property].clone()
+            : cloneDeep(this.target[property]);
       }
     });
 
-    if (typeof this.target.afterMapping === 'function') { this.target.afterMapping(); }
+    if (typeof this.target.afterMapping === 'function') {
+      this.target.afterMapping();
+    }
 
     return this.target;
   }
 
+  private buildValue(pathString: string, source: any): any {
+    let path = split(pathString, '.');
+    let data = source;
+    while (path.length) {
+      data = get(data, path[0]);
+      path.splice(0, 1);
+      if (path.length && isArray(data)) {
+        return map(data, d => this.buildValue(path.join('.'), d));
+      }
+    }
+    return data;
+  }
+
   public serialize(source?: T): any {
-    if (!source) { return; }
+    if (!source) {
+      return;
+    }
     const res: any = {};
 
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
       if (Array.isArray(mapping.type)) {
-        res[mapping.source] = (get(source, property) || []).
-          map((value: any) => this.getSerializeValue((mapping.type as Type[])[0], value));
+        res[mapping.source] = (get(source, property) || []).map((value: any) =>
+          this.getSerializeValue((mapping.type as Type[])[0], value)
+        );
       } else {
         const value = get(source, property);
         if (value !== undefined) {
@@ -122,7 +147,9 @@ export class ModelMapper<T> {
   }
 
   private getSerializeValue(type: Type, value: any) {
-    if (value === null) { return null; }
+    if (value === null) {
+      return null;
+    }
     if (type === 'Moment') {
       return value.toISOString();
     }
@@ -155,5 +182,4 @@ export class ModelMapper<T> {
   private buildMomentDuration(value: any): moment.Duration {
     return value ? (moment.isDuration(value) ? value : moment.duration(value)) : undefined;
   }
-
 }
