@@ -1,6 +1,6 @@
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
 import 'reflect-metadata';
-import { isEqual, cloneDeep, get, merge, split, isArray, map } from 'lodash';
+import { isEqual, cloneDeep, get, merge, split, isArray, map, concat } from 'lodash';
 import * as moment from 'moment';
 import { IOptions, Type } from './property-map.decorator';
 
@@ -75,25 +75,12 @@ export class ModelMapper<T> {
 
   public map(source?: any): T {
     if (!source) return;
-
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
-
-      const value = this.buildValue(mapping.source, source);
-      if (Array.isArray(mapping.type)) {
-        this.target[property] = Array.isArray(value)
-          ? value.map((v: any) => this.getValue((mapping.type as Type[])[0], v))
-          : value === null
-          ? null
-          : undefined;
-      } else {
-        this.target[property] = this.getValue(mapping.type, value);
-      }
-
+      this.target[property] = this.buildValue(mapping.type, mapping.source, source);
       if (mapping.default !== undefined && this.target[property] === undefined) {
         this.target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
       }
-
       if (mapping.trace) {
         this.target._initials = this.target._initials || {};
         this.target._initials[property] =
@@ -102,25 +89,33 @@ export class ModelMapper<T> {
             : cloneDeep(this.target[property]);
       }
     });
-
     if (typeof this.target.afterMapping === 'function') {
       this.target.afterMapping();
     }
-
     return this.target;
   }
 
-  private buildValue(pathString: string, source: any): any {
+  private buildValue(type: Type | Type[], pathString: string, source: any): any {
     let path = split(pathString, '.');
     let data = source;
     while (path.length) {
       data = get(data, path[0]);
       path.splice(0, 1);
       if (path.length && isArray(data)) {
-        return map(data, d => this.buildValue(path.join('.'), d));
+        return concat(...map(data, d => this.buildValue(type, path.join('.'), d)));
       }
     }
-    return data;
+    if (Array.isArray(type)) {
+      return Array.isArray(data)
+        ? map(data, d => this.getValue((type as Type[])[0], d))
+        : data
+        ? this.getValue((type as Type[])[0], data)
+        : data === null
+        ? null
+        : undefined;
+    } else {
+      return this.getValue(type, data);
+    }
   }
 
   public serialize(source?: T): any {

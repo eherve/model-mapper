@@ -1,6 +1,6 @@
 {
   "name": "model-mapper",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "",
   "main": "./lib/main.js",
   "types": "./lib/main.d.ts",

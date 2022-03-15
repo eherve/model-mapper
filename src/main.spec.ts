@@ -2,7 +2,7 @@ import { ModelMapper } from './model-mapper';
 import { propertyMap } from './property-map.decorator';
 import chai = require('chai');
 import { expect } from 'chai';
-import { clone, each, property } from 'lodash';
+import { clone, each, merge, property } from 'lodash';
 import { Duration, Moment } from 'moment';
 import moment = require('moment');
 
@@ -39,6 +39,9 @@ class Test {
 
   @propertyMap({ source: 'embedeInList.items.model', type: [Test] })
   public embedeInList: Test[];
+
+  @propertyMap({ source: 'embedeInList.items.model.embedeInEmbedList.items.model', type: [Test] })
+  public embedeInEmbededList: Test[];
 }
 
 const data: any = {
@@ -56,8 +59,14 @@ const data: any = {
 const subTest = clone(data);
 const subTests = new Array(2).fill(clone(data));
 const embedeInList = {
-  items: new Array(2).fill({
-    model: clone(data),
+  items: new Array(1).fill({
+    model: merge(clone(data), {
+      embedeInEmbedList: {
+        items: new Array(2).fill({
+          model: clone(data),
+        }),
+      },
+    }),
   }),
 };
 data.subTest = subTest;
@@ -65,7 +74,7 @@ data.subTests = subTests;
 data.embedeInList = embedeInList;
 
 const mapped = new ModelMapper(Test).map(data);
-console.log(mapped);
+// console.log('mapped', mapped);
 
 function validateTest(testData: any, info?: string) {
   const run = () => {
@@ -119,6 +128,7 @@ describe('ModelMapper Module', () => {
     validateTest(mapped.subTest);
   });
   describe('validate SubModel array properties', () => {
+    console.log(mapped.subTests);
     expect(mapped.subTests).to.not.be.undefined;
     expect(mapped.subTests).to.not.be.null;
     expect(mapped.subTests.length).to.be.gt(0);
@@ -129,5 +139,11 @@ describe('ModelMapper Module', () => {
     expect(mapped.embedeInList).to.not.be.null;
     expect(mapped.embedeInList.length).to.be.gt(0);
     each(mapped.embedeInList, (d, i) => validateTest(d, `In Array SubModel [${i}]`));
+  });
+  describe('validate SubModel in array of SubModel properties', () => {
+    expect(mapped.embedeInEmbededList).to.not.be.undefined;
+    expect(mapped.embedeInEmbededList).to.not.be.null;
+    expect(mapped.embedeInEmbededList.length).to.be.gt(0);
+    each(mapped.embedeInEmbededList, (d, i) => validateTest(d, `In Array SubModel Array [${i}]`));
   });
 });
