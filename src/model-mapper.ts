@@ -1,3 +1,5 @@
+/** @format */
+
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
 import 'reflect-metadata';
 import { isEqual, cloneDeep, get, merge, split, isArray, map, concat } from 'lodash';
@@ -77,7 +79,10 @@ export class ModelMapper<T> {
     if (!source) return;
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
-      this.target[property] = this.buildValue(mapping.type, mapping.source, source);
+      this.target[property] =
+        typeof mapping.transformer === 'function'
+          ? mapping.transformer(source, this.buildValue(mapping.type, mapping.source, source))
+          : this.buildValue(mapping.type, mapping.source, source);
       if (mapping.default !== undefined && this.target[property] === undefined) {
         this.target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
       }

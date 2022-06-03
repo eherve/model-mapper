@@ -5,5 +5,6 @@ export interface IOptions {
     default?: any;
     trace?: boolean;
     type?: Type | Type[];
+    transformer?: (source: any, value: any) => any;
 }
 export declare function propertyMap(options?: IOptions): PropertyDecorator;

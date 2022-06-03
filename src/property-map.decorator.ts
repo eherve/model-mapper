@@ -7,6 +7,7 @@ export interface IOptions {
   default?: any;
   trace?: boolean;
   type?: Type | Type[];
+  transformer?: (source: any, value: any) => any
 }
 
 export function propertyMap(options: IOptions = {}): PropertyDecorator {
@@ -23,6 +24,7 @@ export function propertyMap(options: IOptions = {}): PropertyDecorator {
       default: options.default,
       trace: options.trace,
       type: options.type,
+      transformer: options.transformer
     };
   };
 }

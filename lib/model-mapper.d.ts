@@ -1,3 +1,4 @@
+/** @format */
 import 'reflect-metadata';
 export interface IModelMapper {
     _initials?: {
