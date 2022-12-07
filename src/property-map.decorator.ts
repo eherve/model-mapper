@@ -5,7 +5,6 @@ export type Type = 'Moment' | 'Moment.Duration' | (new () => any);
 export interface IOptions {
   source?: string;
   default?: any;
-  trace?: boolean;
   type?: Type | Type[];
   transformer?: (source: any, value: any) => any
 }
@@ -22,7 +21,6 @@ export function propertyMap(options: IOptions = {}): PropertyDecorator {
     ownMetadata[propertyKey] = {
       source: options.source || propertyKey,
       default: options.default,
-      trace: options.trace,
       type: options.type,
       transformer: options.transformer
     };

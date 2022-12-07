@@ -6,20 +6,6 @@ import { isEqual, cloneDeep, get, merge, split, isArray, map, concat } from 'lod
 import * as moment from 'moment';
 import { IOptions, Type } from './property-map.decorator';
 
-export interface IModelMapper {
-  _initials?: { [property: string]: any };
-
-  getPropertySource?(property: string): string | string[];
-
-  isPropertyDirty?(property: string): boolean;
-
-  getDirtyProperties?(): string[];
-
-  resetDirty?(): this;
-
-  merge?(source: any, resetDirty?: boolean): this;
-}
-
 export class ModelMapper<T> {
   private target: any;
   private propertyMapping: { [key: string]: IOptions };
@@ -27,52 +13,6 @@ export class ModelMapper<T> {
   constructor(type: new () => T) {
     this.target = new type();
     this.propertyMapping = Reflect.getOwnMetadata('propertyMap', Object.getPrototypeOf(this.target)) || {};
-    const self = this;
-
-    this.target.getPropertySource = function (property: string): string | string[] {
-      const mapping = self.propertyMapping[property];
-      return mapping ? mapping.source : null;
-    };
-
-    this.target.isPropertyDirty = function (property: string): boolean {
-      const mapping = self.propertyMapping[property];
-      if (!mapping || !mapping.trace) {
-        return null;
-      }
-      return this[property].equals
-        ? this[property].equals(this._initials[property])
-        : !isEqual(this[property], this._initials[property]);
-    };
-
-    this.target.getDirtyProperties = function (): string[] {
-      const properties: string[] = [];
-      for (const property in self.propertyMapping) {
-        if (self.propertyMapping.hasOwnProperty(property)) {
-          if (this.isPropertyDirty(property)) {
-            properties.push(property);
-          }
-        }
-      }
-      return properties;
-    };
-
-    this.target.resetDirty = function (): T {
-      Object.keys(self.propertyMapping).forEach(key => {
-        const mapping = self.propertyMapping[key];
-        if (mapping.trace) {
-          this._initials[key] = this[key].clone ? this[key].clone() : cloneDeep(this[key]);
-        }
-      });
-      return this;
-    };
-
-    this.target.merge = function (source: any, resetDirty: boolean = false): T {
-      merge(this, source);
-      if (resetDirty) {
-        this.resetDirty();
-      }
-      return this;
-    };
   }
 
   public map(source?: any): T {
@@ -85,13 +25,6 @@ export class ModelMapper<T> {
           : this.buildValue(mapping.type, mapping.source, source);
       if (mapping.default !== undefined && this.target[property] === undefined) {
         this.target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
-      }
-      if (mapping.trace) {
-        this.target._initials = this.target._initials || {};
-        this.target._initials[property] =
-          this.target[property] && this.target[property].clone
-            ? this.target[property].clone()
-            : cloneDeep(this.target[property]);
       }
     });
     if (typeof this.target.afterMapping === 'function') {

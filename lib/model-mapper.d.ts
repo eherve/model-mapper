@@ -1,15 +1,5 @@
 /** @format */
 import 'reflect-metadata';
-export interface IModelMapper {
-    _initials?: {
-        [property: string]: any;
-    };
-    getPropertySource?(property: string): string | string[];
-    isPropertyDirty?(property: string): boolean;
-    getDirtyProperties?(): string[];
-    resetDirty?(): this;
-    merge?(source: any, resetDirty?: boolean): this;
-}
 export declare class ModelMapper<T> {
     private target;
     private propertyMapping;
