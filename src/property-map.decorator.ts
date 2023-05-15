@@ -1,6 +1,6 @@
 import { clone } from 'lodash';
 import 'reflect-metadata';
-export type Type = 'Moment' | 'Moment.Duration' | (new () => any);
+export type Type = 'Moment' | 'Moment.Duration' | Date | (new () => any);
 
 export interface IOptions {
   source?: string;

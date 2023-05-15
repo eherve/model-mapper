@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-export declare type Type = 'Moment' | 'Moment.Duration' | (new () => any);
+export declare type Type = 'Moment' | 'Moment.Duration' | Date | (new () => any);
 export interface IOptions {
     source?: string;
     default?: any;

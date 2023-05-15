@@ -80,31 +80,19 @@ export class ModelMapper<T> {
   }
 
   private getSerializeValue(type: Type, value: any) {
-    if (value === null) {
-      return null;
-    }
-    if (type === 'Moment') {
-      return value.toISOString();
-    }
-    if (type === 'Moment.Duration') {
-      return value.toISOString(value);
-    }
-    if (type) {
-      return new ModelMapper(type).serialize(value);
-    }
+    if (value === null) return null;
+    if (type === 'Moment') return value.toISOString();
+    if (type === 'Moment.Duration') return value.toISOString(value);
+    if (type === Date) return value.toISOString();
+    if (type) return new ModelMapper(type as new () => any).serialize(value);
     return value;
   }
 
   private getValue(type: Type, value: any) {
-    if (type === 'Moment') {
-      return this.buildMoment(value);
-    }
-    if (type === 'Moment.Duration') {
-      return this.buildMomentDuration(value);
-    }
-    if (type) {
-      return new ModelMapper(type).map(value);
-    }
+    if (type === 'Moment') return this.buildMoment(value);
+    if (type === 'Moment.Duration') return this.buildMomentDuration(value);
+    if (type === Date) return new Date(value);
+    if (type) return new ModelMapper(type as new () => any).map(value);
     return value;
   }
 
