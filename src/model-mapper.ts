@@ -46,11 +46,7 @@ export class ModelMapper<T> {
     if (Array.isArray(type)) {
       return Array.isArray(data)
         ? map(data, d => this.getValue((type as Type[])[0], d))
-        : data
-        ? this.getValue((type as Type[])[0], data)
-        : data === null
-        ? null
-        : undefined;
+        : this.getValue((type as Type[])[0], data);
     } else {
       return this.getValue(type, data);
     }
@@ -89,6 +85,8 @@ export class ModelMapper<T> {
   }
 
   private getValue(type: Type, value: any) {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
     if (type === 'Moment') return this.buildMoment(value);
     if (type === 'Moment.Duration') return this.buildMomentDuration(value);
     if (type === Date) return new Date(value);
