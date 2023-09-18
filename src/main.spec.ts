@@ -1,3 +1,5 @@
+/** @format */
+
 import { ModelMapper } from './model-mapper';
 import { propertyMap } from './property-map.decorator';
 import chai = require('chai');
@@ -18,6 +20,9 @@ class Test {
 
   @propertyMap({ source: 'info.description' })
   public description: string;
+
+  @propertyMap({ type: Date })
+  public dateType: Date;
 
   @propertyMap({ type: 'Moment' })
   public dateString: Moment;
@@ -47,6 +52,7 @@ class Test {
 const data: any = {
   _id: 0,
   name: 'Test',
+  dateType: new Date(),
   dateString: moment().format('YYYY-MM-DD'),
   dateMoment: moment(),
   date: new Date(),
@@ -92,6 +98,11 @@ function validateTest(testData: any, info?: string) {
     });
     it(`should not have "unmapped" property`, () => {
       expect(testData.unmapped).to.be.undefined;
+    });
+    it(`should have "dateType" Date property`, () => {
+      expect(testData.dateType).to.not.be.undefined;
+      expect(testData.dateType).to.not.be.null;
+      expect(testData.dateType.valueOf()).to.be.equals(data.dateType.valueOf());
     });
     it(`should have "dateString" Moment property`, () => {
       expect(testData.dateString).to.not.be.undefined;

@@ -1,17 +1,12 @@
+/** @format */
+
 import { clone } from 'lodash';
 import 'reflect-metadata';
-export type Type = 'Moment' | 'Moment.Duration' | Date | (new () => any);
+import { IPropertyMapOptions } from './property-map-options.interface';
 
-export interface IOptions {
-  source?: string;
-  default?: any;
-  type?: Type | Type[];
-  transformer?: (source: any, value: any) => any
-}
-
-export function propertyMap(options: IOptions = {}): PropertyDecorator {
+export function propertyMap(options: IPropertyMapOptions = {}): PropertyDecorator {
   return (target: any, propertyKey: string) => {
-    let ownMetadata;
+    let ownMetadata: { [key: string]: IPropertyMapOptions };
     if (!Reflect.hasOwnMetadata('propertyMap', target)) {
       ownMetadata = clone(Reflect.getMetadata('propertyMap', target) || {});
       Reflect.defineMetadata('propertyMap', ownMetadata, target);
@@ -22,7 +17,8 @@ export function propertyMap(options: IOptions = {}): PropertyDecorator {
       source: options.source || propertyKey,
       default: options.default,
       type: options.type,
-      transformer: options.transformer
+      transformer: options.transformer,
+      info: options.info,
     };
   };
 }
