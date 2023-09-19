@@ -6,12 +6,7 @@ import { get, split, isArray, map, concat, clone, each, keys, head, includes } f
 import * as moment from 'moment';
 import { IMappedEntity } from './mapped-entity.interface';
 import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
-
-export interface IPropertyMappingTreeElmt extends IPropertyMapOptions {
-  propertyMapping?: PropertyMappingTree;
-}
-
-export type PropertyMappingTree = { [key: string]: IPropertyMappingTreeElmt };
+import { PropertyMappingTree } from './property-mapping-tree.interface';
 
 export class ModelMapper<T> {
   protected target: any;

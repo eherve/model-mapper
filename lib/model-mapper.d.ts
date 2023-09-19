@@ -2,12 +2,7 @@
 import 'reflect-metadata';
 import { IMappedEntity } from './mapped-entity.interface';
 import { IPropertyMapOptions } from './property-map-options.interface';
-export interface IPropertyMappingTreeElmt extends IPropertyMapOptions {
-    propertyMapping?: PropertyMappingTree;
-}
-export declare type PropertyMappingTree = {
-    [key: string]: IPropertyMappingTreeElmt;
-};
+import { PropertyMappingTree } from './property-mapping-tree.interface';
 export declare class ModelMapper<T> {
     protected target: any;
     protected propertyMapping: {
