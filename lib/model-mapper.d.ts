@@ -12,6 +12,7 @@ export declare class ModelMapper<T> {
     map(source?: any): T & IMappedEntity;
     private buildValue;
     serialize(source?: T): any;
+    private buildSerializeValue;
     private getSerializeValue;
     private getValue;
     private buildMoment;

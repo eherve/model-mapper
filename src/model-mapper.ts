@@ -1,16 +1,16 @@
 /** @format */
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
-import 'reflect-metadata';
-import { get, split, isArray, map, concat, clone, each, keys, head, includes } from 'lodash';
+import {clone, concat, each, get, head, includes, isArray, keys, map, set, split} from 'lodash';
 import * as moment from 'moment';
-import { IMappedEntity } from './mapped-entity.interface';
-import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
-import { PropertyMappingTree } from './property-mapping-tree.interface';
+import 'reflect-metadata';
+import {IMappedEntity} from './mapped-entity.interface';
+import {IPropertyMapOptions, PropertyMapOptionsType} from './property-map-options.interface';
+import {PropertyMappingTree} from './property-mapping-tree.interface';
 
 export class ModelMapper<T> {
   protected target: any;
-  protected propertyMapping: { [key: string]: IPropertyMapOptions };
+  protected propertyMapping: {[key: string]: IPropertyMapOptions};
 
   constructor(type: new () => T) {
     this.target = new type();
@@ -25,10 +25,16 @@ export class ModelMapper<T> {
     const target = clone(this.target);
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
-      target[property] =
-        typeof mapping.transformer === 'function'
-          ? mapping.transformer(source, this.buildValue(mapping.type, mapping.source, source))
-          : this.buildValue(mapping.type, mapping.source, source);
+      if (typeof mapping.transformer === 'function') {
+        target[property] = mapping.transformer(
+          source,
+          this.buildValue(mapping.type, mapping.source, source),
+          target,
+          'map'
+        );
+      } else {
+        target[property] = this.buildValue(mapping.type, mapping.source, source);
+      }
       if (mapping.default !== undefined && target[property] === undefined) {
         target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
       }
@@ -57,26 +63,35 @@ export class ModelMapper<T> {
   }
 
   public serialize(source?: T): any {
-    if (!source) {
-      return;
-    }
-    const res: any = {};
-
+    if (!source) return;
+    const target: any = {};
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
-      if (Array.isArray(mapping.type)) {
-        res[mapping.source] = (get(source, property) || []).map((value: any) =>
-          this.getSerializeValue((mapping.type as PropertyMapOptionsType[])[0], value)
+      if (typeof mapping.transformer === 'function') {
+        set(
+          target,
+          mapping.source,
+          mapping.transformer(source, this.buildSerializeValue(mapping.type, source, property), target, 'serialize')
         );
       } else {
-        const value = get(source, property);
-        if (value !== undefined) {
-          res[mapping.source] = this.getSerializeValue(mapping.type, value);
-        }
+        set(target, mapping.source, this.buildSerializeValue(mapping.type, source, property));
       }
     });
+    return target;
+  }
 
-    return res;
+  private buildSerializeValue(
+    type: PropertyMapOptionsType | PropertyMapOptionsType[],
+    source: any,
+    property: string
+  ): any {
+    if (Array.isArray(type)) {
+      return (get(source, property) || []).map((value: any) =>
+        this.getSerializeValue((type as PropertyMapOptionsType[])[0], value)
+      );
+    } else {
+      return this.getSerializeValue(type, get(source, property));
+    }
   }
 
   private getSerializeValue(type: PropertyMapOptionsType, value: any) {

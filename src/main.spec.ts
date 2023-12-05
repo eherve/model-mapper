@@ -1,15 +1,15 @@
 /** @format */
 
-import { ModelMapper } from './model-mapper';
-import { propertyMap } from './property-map.decorator';
+import {expect} from 'chai';
+import {clone, each, merge} from 'lodash';
+import {Duration, Moment} from 'moment';
+import {ModelMapper} from './model-mapper';
+import {propertyMap} from './property-map.decorator';
 import chai = require('chai');
-import { expect } from 'chai';
-import { clone, each, merge, property } from 'lodash';
-import { Duration, Moment } from 'moment';
 import moment = require('moment');
 
 class Test {
-  @propertyMap({ source: '_id' })
+  @propertyMap({source: '_id'})
   public id: string;
 
   @propertyMap()
@@ -18,34 +18,34 @@ class Test {
   @propertyMap()
   public noData: string;
 
-  @propertyMap({ source: 'info.description' })
+  @propertyMap({source: 'info.description'})
   public description: string;
 
-  @propertyMap({ type: Date })
+  @propertyMap({type: Date})
   public dateType: Date;
 
-  @propertyMap({ type: 'Moment' })
+  @propertyMap({type: 'Moment'})
   public dateString: Moment;
 
-  @propertyMap({ type: 'Moment' })
+  @propertyMap({type: 'Moment'})
   public dateMoment: Moment;
 
-  @propertyMap({ type: 'Moment' })
+  @propertyMap({type: 'Moment'})
   public date: Moment;
 
-  @propertyMap({ type: 'Moment.Duration' })
+  @propertyMap({type: 'Moment.Duration'})
   public duration: Duration;
 
-  @propertyMap({ type: Test })
+  @propertyMap({type: Test})
   public subTest: Test;
 
-  @propertyMap({ type: [Test] })
+  @propertyMap({type: [Test]})
   public subTests: Test[];
 
-  @propertyMap({ source: 'embedeInList.items.model', type: [Test] })
+  @propertyMap({source: 'embedeInList.items.model', type: [Test]})
   public embedeInList: Test[];
 
-  @propertyMap({ source: 'embedeInList.items.model.embedeInEmbedList.items.model', type: [Test] })
+  @propertyMap({source: 'embedeInList.items.model.embedeInEmbedList.items.model', type: [Test]})
   public embedeInEmbededList: Test[];
 }
 
