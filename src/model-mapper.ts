@@ -25,16 +25,11 @@ export class ModelMapper<T> {
     const target = clone(this.target);
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
+      let value: any;
       if (typeof mapping.transformer === 'function') {
-        target[property] = mapping.transformer(
-          source,
-          this.buildValue(mapping.type, mapping.source, source),
-          target,
-          'map'
-        );
-      } else {
-        target[property] = this.buildValue(mapping.type, mapping.source, source);
-      }
+        value = mapping.transformer(source, this.buildValue(mapping.type, mapping.source, source), target, 'map');
+      } else value = this.buildValue(mapping.type, mapping.source, source);
+      if (value !== undefined) target[property] = value;
       if (mapping.default !== undefined && target[property] === undefined) {
         target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
       }
@@ -67,15 +62,16 @@ export class ModelMapper<T> {
     const target: any = {};
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
+      let value: any;
       if (typeof mapping.transformer === 'function') {
-        set(
+        value = mapping.transformer(
+          source,
+          this.buildSerializeValue(mapping.type, source, property),
           target,
-          mapping.source,
-          mapping.transformer(source, this.buildSerializeValue(mapping.type, source, property), target, 'serialize')
+          'serialize'
         );
-      } else {
-        set(target, mapping.source, this.buildSerializeValue(mapping.type, source, property));
-      }
+      } else value = this.buildSerializeValue(mapping.type, source, property);
+      if (value !== undefined) set(target, mapping.source, value);
     });
     return target;
   }
