@@ -57,7 +57,7 @@ export class ModelMapper<T> {
           this.buildSerializeValue(mapping.type, source, property),
           target,
           'serialize',
-          mapping.source
+          property
         );
       } else value = this.buildSerializeValue(mapping.type, source, property);
       if (value !== undefined) set(target, mapping.source, value);
