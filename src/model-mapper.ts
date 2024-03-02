@@ -1,12 +1,12 @@
 /** @format */
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
-import {clone, concat, each, get, head, includes, isArray, keys, map, set, split} from 'lodash';
+import { clone, concat, each, get, head, includes, isArray, keys, map, set, split } from 'lodash';
 import * as moment from 'moment';
 import 'reflect-metadata';
-import {IMappedEntity} from './mapped-entity.interface';
-import {IPropertyMapOptions, PropertyMapOptionsType} from './property-map-options.interface';
-import {PropertyMappingTree} from './property-mapping-tree.interface';
+import { IMappedEntity } from './mapped-entity.interface';
+import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
+import { PropertyMappingTree } from './property-mapping-tree.interface';
 
 export class ModelMapper<T> {
   protected target: any;
@@ -27,8 +27,14 @@ export class ModelMapper<T> {
       const mapping = this.propertyMapping[property];
       let value: any;
       if (typeof mapping.transformer === 'function') {
-        value = mapping.transformer(source, this.buildValue(mapping.type, mapping.source, source), target, 'map');
-      } else value = this.buildValue(mapping.type, mapping.source, source);
+        value = mapping.transformer(
+          source,
+          this.buildMapValue(mapping.type, mapping.source, source),
+          target,
+          'map',
+          mapping.source
+        );
+      } else value = this.buildMapValue(mapping.type, mapping.source, source);
       if (value !== undefined) target[property] = value;
       if (mapping.default !== undefined && target[property] === undefined) {
         target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
@@ -36,25 +42,6 @@ export class ModelMapper<T> {
     });
     if (typeof target.afterMapping === 'function') target.afterMapping();
     return target;
-  }
-
-  private buildValue(type: PropertyMapOptionsType | PropertyMapOptionsType[], pathString: string, source: any): any {
-    let path = split(pathString, '.');
-    let data = source;
-    while (path.length) {
-      data = get(data, path[0]);
-      path.splice(0, 1);
-      if (path.length && isArray(data)) {
-        return concat(...map(data, d => this.buildValue(type, path.join('.'), d)));
-      }
-    }
-    if (Array.isArray(type)) {
-      return Array.isArray(data)
-        ? map(data, d => this.getValue((type as PropertyMapOptionsType[])[0], d))
-        : this.getValue((type as PropertyMapOptionsType[])[0], data);
-    } else {
-      return this.getValue(type, data);
-    }
   }
 
   public serialize(source?: T): any {
@@ -69,12 +56,32 @@ export class ModelMapper<T> {
           source,
           this.buildSerializeValue(mapping.type, source, property),
           target,
-          'serialize'
+          'serialize',
+          mapping.source
         );
       } else value = this.buildSerializeValue(mapping.type, source, property);
       if (value !== undefined) set(target, mapping.source, value);
     });
     return target;
+  }
+
+  private buildMapValue(type: PropertyMapOptionsType | PropertyMapOptionsType[], pathString: string, source: any): any {
+    let path = split(pathString, '.');
+    let data = source;
+    while (path.length) {
+      data = get(data, path[0]);
+      path.splice(0, 1);
+      if (path.length && isArray(data)) {
+        return concat(...map(data, d => this.buildMapValue(type, path.join('.'), d)));
+      }
+    }
+    if (Array.isArray(type)) {
+      return Array.isArray(data)
+        ? map(data, d => this.getMapValue((type as PropertyMapOptionsType[])[0], d))
+        : this.getMapValue((type as PropertyMapOptionsType[])[0], data);
+    } else {
+      return this.getMapValue(type, data);
+    }
   }
 
   private buildSerializeValue(
@@ -83,7 +90,7 @@ export class ModelMapper<T> {
     property: string
   ): any {
     if (Array.isArray(type)) {
-      return (get(source, property) || []).map((value: any) =>
+      return map(get(source, property) || [], (value: any) =>
         this.getSerializeValue((type as PropertyMapOptionsType[])[0], value)
       );
     } else {
@@ -92,15 +99,16 @@ export class ModelMapper<T> {
   }
 
   private getSerializeValue(type: PropertyMapOptionsType, value: any) {
+    if (value === undefined) return undefined;
     if (value === null) return null;
-    if (type === 'Moment') return value.toISOString();
-    if (type === 'Moment.Duration') return value.toISOString(value);
+    if (type === 'Moment') return moment.isMoment(value) ? value.toISOString() : value;
+    if (type === 'Moment.Duration') return moment.isDuration(value) ? value.toISOString() : value;
     if (type === Date) return value.toISOString();
     if (type) return new ModelMapper(type as new () => any).serialize(value);
     return value;
   }
 
-  private getValue(type: PropertyMapOptionsType, value: any) {
+  private getMapValue(type: PropertyMapOptionsType, value: any) {
     if (value === undefined) return undefined;
     if (value === null) return null;
     if (type === 'Moment') return this.buildMoment(value);

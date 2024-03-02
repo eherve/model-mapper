@@ -1,10 +1,10 @@
 /** @format */
 
-import {expect} from 'chai';
-import {clone, each, merge} from 'lodash';
-import {Duration, Moment} from 'moment';
-import {ModelMapper} from './model-mapper';
-import {propertyMap} from './property-map.decorator';
+import { expect } from 'chai';
+import { clone, each, merge } from 'lodash';
+import { Duration, Moment } from 'moment';
+import { ModelMapper } from './model-mapper';
+import { propertyMap } from './property-map.decorator';
 import chai = require('chai');
 import moment = require('moment');
 
