@@ -1,12 +1,12 @@
 /** @format */
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
-import { clone, concat, each, get, head, includes, isArray, keys, map, set, split } from 'lodash';
+import {clone, concat, each, get, head, includes, isArray, keys, map, set, split} from 'lodash';
 import * as moment from 'moment';
 import 'reflect-metadata';
-import { IMappedEntity } from './mapped-entity.interface';
-import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
-import { PropertyMappingTree } from './property-mapping-tree.interface';
+import {IMappedEntity} from './mapped-entity.interface';
+import {IPropertyMapOptions, PropertyMapOptionsType} from './property-map-options.interface';
+import {PropertyMappingTree} from './property-mapping-tree.interface';
 
 export class ModelMapper<T> {
   protected target: any;
@@ -76,9 +76,8 @@ export class ModelMapper<T> {
       }
     }
     if (Array.isArray(type)) {
-      return Array.isArray(data)
-        ? map(data, d => this.getMapValue((type as PropertyMapOptionsType[])[0], d))
-        : this.getMapValue((type as PropertyMapOptionsType[])[0], data);
+      const arrayType = (type as PropertyMapOptionsType[])[0];
+      return Array.isArray(data) ? map(data, d => this.getMapValue(arrayType, d)) : this.getMapValue(arrayType, data);
     } else {
       return this.getMapValue(type, data);
     }
@@ -90,9 +89,12 @@ export class ModelMapper<T> {
     property: string
   ): any {
     if (Array.isArray(type)) {
-      return map(get(source, property) || [], (value: any) =>
-        this.getSerializeValue((type as PropertyMapOptionsType[])[0], value)
-      );
+      const data = get(source, property);
+      if (!data) return data;
+      const arrayType = (type as PropertyMapOptionsType[])[0];
+      return Array.isArray(data)
+        ? map(data, d => this.getSerializeValue(arrayType, d))
+        : this.getSerializeValue(arrayType, data);
     } else {
       return this.getSerializeValue(type, get(source, property));
     }
