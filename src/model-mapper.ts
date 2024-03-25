@@ -9,10 +9,16 @@ import {IPropertyMapOptions, PropertyMapOptionsType} from './property-map-option
 import {PropertyMappingTree} from './property-mapping-tree.interface';
 
 export class ModelMapper<T> {
+  get type(): new () => T {
+    return this._type;
+  }
+  private _type: new () => T;
+
   protected target: any;
   protected propertyMapping: {[key: string]: IPropertyMapOptions};
 
   constructor(type: new () => T) {
+    this._type = type;
     this.target = new type();
     this.propertyMapping = Reflect.getOwnMetadata('propertyMap', Object.getPrototypeOf(this.target)) || {};
     this.target.constructor.prototype.getPropertyMapping = () => {

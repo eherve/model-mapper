@@ -10,3 +10,4 @@ log.txt
 npm-debug.log*
 node_modules
 test
+coverage/tmp
