@@ -141,7 +141,7 @@ export class ModelMapper<T> {
       const type = Array.isArray(tree[property].type)
         ? head(tree[property].type as PropertyMapOptionsType[])
         : tree[property].type;
-      if (!includes([undefined, 'Moment', 'Moment.Duration', Date], type as any)) {
+      if (!includes([undefined, 'Moment', 'Moment.Duration', Date], type as any) && typeof type === 'function') {
         tree[property].propertyMapping = new ModelMapper(type as new () => any).getPropertyMappingTree();
       }
     });
