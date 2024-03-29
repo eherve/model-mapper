@@ -1,12 +1,12 @@
 /** @format */
 import 'reflect-metadata';
-import { IClassMapOptions } from './class-map-options.interface';
 import { IMappedEntity } from './mapped-entity.interface';
 import { IPropertyMapOptions } from './property-map-options.interface';
 import { PropertyMappingTree } from './property-mapping-tree.interface';
 export declare class ModelMapper<T> {
+    get type(): new () => T;
+    private _type;
     protected target: any;
-    protected classMapping: IClassMapOptions;
     protected propertyMapping: {
         [key: string]: IPropertyMapOptions;
     };

@@ -1,12 +1,12 @@
 /** @format */
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
-import {clone, concat, each, get, head, includes, isArray, keys, map, set, split} from 'lodash';
+import { clone, concat, each, get, head, includes, isArray, keys, map, set, split } from 'lodash';
 import * as moment from 'moment';
 import 'reflect-metadata';
-import {IMappedEntity} from './mapped-entity.interface';
-import {IPropertyMapOptions, PropertyMapOptionsType} from './property-map-options.interface';
-import {PropertyMappingTree} from './property-mapping-tree.interface';
+import { IMappedEntity } from './mapped-entity.interface';
+import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
+import { PropertyMappingTree } from './property-mapping-tree.interface';
 
 export class ModelMapper<T> {
   get type(): new () => T {
@@ -141,8 +141,10 @@ export class ModelMapper<T> {
       const type = Array.isArray(tree[property].type)
         ? head(tree[property].type as PropertyMapOptionsType[])
         : tree[property].type;
-      if (!includes([undefined, 'Moment', 'Moment.Duration', Date], type as any) && typeof type === 'function') {
+      if (!includes([undefined, 'Moment', 'Moment.Duration', Date], type as any)) {
+        try {
         tree[property].propertyMapping = new ModelMapper(type as new () => any).getPropertyMappingTree();
+        } catch (err) { console.error(property, type, err); }
       }
     });
     return tree;
