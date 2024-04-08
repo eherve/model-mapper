@@ -1,6 +1,6 @@
 /** @format */
 
-import {clone} from 'lodash';
+import {clone, merge} from 'lodash';
 import 'reflect-metadata';
 import {IPropertyMapOptions} from './property-map-options.interface';
 
@@ -13,12 +13,6 @@ export function propertyMap(options: IPropertyMapOptions = {}): PropertyDecorato
     } else {
       ownMetadata = Reflect.getOwnMetadata('propertyMap', target);
     }
-    ownMetadata[propertyKey] = {
-      source: options.source || propertyKey,
-      default: options.default,
-      type: options.type,
-      transformer: options.transformer,
-      info: options.info,
-    };
+    ownMetadata[propertyKey] = merge({source: propertyKey}, options);
   };
 }

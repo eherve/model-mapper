@@ -5,6 +5,7 @@ export interface IPropertyMapOptions {
     default?: any;
     type?: PropertyMapOptionsType | PropertyMapOptionsType[];
     transformer?: (source: any, value: any, target: any, method: 'map' | 'serialize', property: string) => any;
+    map?: boolean;
     serialize?: boolean;
     info?: any;
 }

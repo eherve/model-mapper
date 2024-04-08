@@ -31,6 +31,7 @@ export class ModelMapper<T> {
     const target = clone(this.target);
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
+      if (mapping.map === false) return;
       let value: any;
       if (typeof mapping.transformer === 'function') {
         value = mapping.transformer(
