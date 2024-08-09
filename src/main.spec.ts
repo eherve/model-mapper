@@ -1,10 +1,10 @@
 /** @format */
 
-import { expect } from 'chai';
-import { clone, each, merge } from 'lodash';
-import { Duration, Moment } from 'moment';
-import { ModelMapper } from './model-mapper';
-import { propertyMap } from './property-map.decorator';
+import {expect} from 'chai';
+import {clone, each, merge} from 'lodash';
+import {Duration, Moment} from 'moment';
+import {ModelMapper} from './model-mapper';
+import {propertyMap} from './property-map.decorator';
 import chai = require('chai');
 import moment = require('moment');
 
@@ -47,6 +47,13 @@ class Test {
 
   @propertyMap({source: 'embedeInList.items.model.embedeInEmbedList.items.model', type: [Test]})
   public embedeInEmbededList: Test[];
+
+  @propertyMap({
+    map: (source: any, value: any, target: any, property: string) => {
+      return 'overrided mapData';
+    },
+  })
+  public mapData: string;
 }
 
 const data: any = {
@@ -61,6 +68,7 @@ const data: any = {
   info: {
     description: 'Description',
   },
+  mapData: 'mapData'
 };
 const subTest = clone(data);
 const subTests = new Array(2).fill(clone(data));
@@ -123,6 +131,9 @@ function validateTest(testData: any, info?: string) {
       expect(testData.date).to.not.be.undefined;
       expect(testData.date).to.not.be.null;
       expect(testData.duration.milliseconds() === moment.duration(data.duration).milliseconds()).to.be.true;
+    });
+    it(`should have "mapData" overrided`, () => {
+      expect(testData.mapData).to.be.equals('overrided mapData');
     });
   };
   if (info) describe(info, () => run());

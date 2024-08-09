@@ -16,3 +16,5 @@ export function propertyMap(options: IPropertyMapOptions = {}): PropertyDecorato
     ownMetadata[propertyKey] = merge({source: propertyKey}, options);
   };
 }
+
+export const PropertyMap = propertyMap;
