@@ -1,7 +1,7 @@
 /** @format */
 
 import { expect } from 'chai';
-import { clone, cloneDeep, each, merge } from 'lodash';
+import { clone, cloneDeep, each, isEqual, merge } from 'lodash';
 import { Duration, Moment } from 'moment';
 import { ModelMapper } from './model-mapper';
 import { propertyMap } from './property-map.decorator';
@@ -31,6 +31,9 @@ class DiscrimenatedBClass extends DiscrimenatedClass {
 class Test {
   @propertyMap({ source: '_id' })
   public id: string;
+
+  @propertyMap()
+  public family: string;
 
   @propertyMap()
   public name: string;
@@ -72,18 +75,21 @@ class Test {
     map: (source: any, value: any, target: any, property: string) => {
       return 'overrided mapData';
     },
+    serialize: (source, value, target, property) => {
+      return 'mapData';
+    },
   })
   public mapData: string;
 
   @propertyMap({ type: DiscrimenatedClass })
-  discrimenatedClass: DiscrimenatedClass;
+  discrimenatedClass: DiscrimenatedAClass | DiscrimenatedBClass;
 }
 
-// @Discriminator({ key: 'family', value: 'TestA' })
-// class TestA extends Test {
-//   @propertyMap()
-//   public extendedA: string;
-// }
+@Discriminator({ key: 'family', value: 'DiscriminatedTest' })
+class DiscriminatedTest extends Test {
+  @propertyMap()
+  public extendedA: string;
+}
 
 const discrimenatedAClassData = {
   family: 'DiscrimenatedA',
@@ -99,10 +105,10 @@ const data: any = {
   _id: 0,
   family: 'Test',
   name: 'Test',
-  dateType: new Date(),
+  dateType: new Date().toISOString(),
   dateString: moment().format('YYYY-MM-DD'),
-  dateMoment: moment(),
-  date: new Date(),
+  dateMoment: moment().toISOString(),
+  date: new Date().toISOString(),
   duration: 'P1Y2M3DT4H5M6S',
   unmapped: 'unmapped',
   info: {
@@ -110,6 +116,7 @@ const data: any = {
   },
   mapData: 'mapData',
   discrimenatedClass: cloneDeep(discrimenatedAClassData),
+  extendedA: 'extendedA',
 };
 const subTest = cloneDeep(data);
 const subTests = new Array(2).fill(cloneDeep(data));
@@ -130,8 +137,12 @@ data.subTests = subTests;
 data.embedeInList = embedeInList;
 
 const mapped = new ModelMapper(Test).map(data);
+// const serialized = new ModelMapper(Test).serialize(mapped); // TODO validate serialize
+const discriminated = new ModelMapper(Test).map<DiscriminatedTest>(
+  merge(cloneDeep(data), { family: 'DiscriminatedTest' })
+);
 
-function validateTest(testData: any, info?: string) {
+function validateMap(testData: any, info?: string) {
   const run = () => {
     it(`should have "id" string property`, () => {
       expect(testData.id).to.be.equals(data._id);
@@ -151,7 +162,7 @@ function validateTest(testData: any, info?: string) {
     it(`should have "dateType" Date property`, () => {
       expect(testData.dateType).to.not.be.undefined;
       expect(testData.dateType).to.not.be.null;
-      expect(testData.dateType.valueOf()).to.be.equals(data.dateType.valueOf());
+      expect(testData.dateType.valueOf()).to.be.equals(new Date(data.dateType).valueOf());
     });
     it(`should have "dateString" Moment property`, () => {
       expect(testData.dateString).to.not.be.undefined;
@@ -203,30 +214,62 @@ function validateTest(testData: any, info?: string) {
 }
 
 describe('ModelMapper Module', () => {
-  describe('validate properties', () => {
-    validateTest(mapped);
+  describe('Test', () => {
+    describe('validate properties', () => {
+      it(`should not have "extendedA" string property`, () => expect((mapped as any).extendedA).not.exist);
+      validateMap(mapped);
+    });
+    describe('validate SubModel properties', () => {
+      expect(mapped.subTest).to.not.be.undefined;
+      expect(mapped.subTest).to.not.be.null;
+      validateMap(mapped.subTest);
+    });
+    describe('validate SubModel array properties', () => {
+      expect(mapped.subTests).to.not.be.undefined;
+      expect(mapped.subTests).to.not.be.null;
+      expect(mapped.subTests.length).to.be.gt(0);
+      each(mapped.subTests, (d, i) => validateMap(d, `SubModel [${i}]`));
+    });
+    describe('validate SubModel in array properties', () => {
+      expect(mapped.embedeInList).to.not.be.undefined;
+      expect(mapped.embedeInList).to.not.be.null;
+      expect(mapped.embedeInList.length).to.be.gt(0);
+      each(mapped.embedeInList, (d, i) => validateMap(d, `In Array SubModel [${i}]`));
+    });
+    describe('validate SubModel in array of SubModel properties', () => {
+      expect(mapped.embedeInEmbededList).to.not.be.undefined;
+      expect(mapped.embedeInEmbededList).to.not.be.null;
+      expect(mapped.embedeInEmbededList.length).to.be.gt(0);
+      each(mapped.embedeInEmbededList, (d, i) => validateMap(d, `In Array SubModel Array [${i}]`));
+    });
   });
-  describe('validate SubModel properties', () => {
-    expect(mapped.subTest).to.not.be.undefined;
-    expect(mapped.subTest).to.not.be.null;
-    validateTest(mapped.subTest);
-  });
-  describe('validate SubModel array properties', () => {
-    expect(mapped.subTests).to.not.be.undefined;
-    expect(mapped.subTests).to.not.be.null;
-    expect(mapped.subTests.length).to.be.gt(0);
-    each(mapped.subTests, (d, i) => validateTest(d, `SubModel [${i}]`));
-  });
-  describe('validate SubModel in array properties', () => {
-    expect(mapped.embedeInList).to.not.be.undefined;
-    expect(mapped.embedeInList).to.not.be.null;
-    expect(mapped.embedeInList.length).to.be.gt(0);
-    each(mapped.embedeInList, (d, i) => validateTest(d, `In Array SubModel [${i}]`));
-  });
-  describe('validate SubModel in array of SubModel properties', () => {
-    expect(mapped.embedeInEmbededList).to.not.be.undefined;
-    expect(mapped.embedeInEmbededList).to.not.be.null;
-    expect(mapped.embedeInEmbededList.length).to.be.gt(0);
-    each(mapped.embedeInEmbededList, (d, i) => validateTest(d, `In Array SubModel Array [${i}]`));
+  describe('DiscriminatedTest', () => {
+    describe('validate properties', () => {
+      it(`should have "extendedA" string property`, () => expect(discriminated.extendedA).to.be.equals(data.extendedA));
+      validateMap(discriminated);
+    });
+    describe('validate SubModel properties', () => {
+      expect(discriminated.subTest).to.not.be.undefined;
+      expect(discriminated.subTest).to.not.be.null;
+      validateMap(discriminated.subTest);
+    });
+    describe('validate SubModel array properties', () => {
+      expect(discriminated.subTests).to.not.be.undefined;
+      expect(discriminated.subTests).to.not.be.null;
+      expect(discriminated.subTests.length).to.be.gt(0);
+      each(discriminated.subTests, (d, i) => validateMap(d, `SubModel [${i}]`));
+    });
+    describe('validate SubModel in array properties', () => {
+      expect(discriminated.embedeInList).to.not.be.undefined;
+      expect(discriminated.embedeInList).to.not.be.null;
+      expect(discriminated.embedeInList.length).to.be.gt(0);
+      each(discriminated.embedeInList, (d, i) => validateMap(d, `In Array SubModel [${i}]`));
+    });
+    describe('validate SubModel in array of SubModel properties', () => {
+      expect(discriminated.embedeInEmbededList).to.not.be.undefined;
+      expect(discriminated.embedeInEmbededList).to.not.be.null;
+      expect(discriminated.embedeInEmbededList.length).to.be.gt(0);
+      each(discriminated.embedeInEmbededList, (d, i) => validateMap(d, `In Array SubModel Array [${i}]`));
+    });
   });
 });

@@ -27,8 +27,15 @@ export class ModelMapper<T> {
     };
   }
 
-  public map(source?: any): T & IMappedEntity {
+  public map<R extends T>(source?: any): R & IMappedEntity {
     if (!source) return;
+
+    const discriminator = registeredDiscriminator[this.type as any];
+    if (discriminator?.length) {
+      const extended = find(discriminator, entry => isEqual(source[entry.key], entry.value));
+      if (extended) return new ModelMapper(extended.target).map(source);
+    }
+
     const target = clone(this.target);
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
@@ -47,6 +54,13 @@ export class ModelMapper<T> {
 
   public serialize(source?: T): any {
     if (!source) return;
+
+    const discriminator = registeredDiscriminator[this.type as any];
+    if (discriminator?.length) {
+      const extended = find(discriminator, entry => isEqual((source as any)[entry.key], entry.value)); // TODO if source
+      if (extended) return new ModelMapper(extended.target).serialize(source);
+    }
+
     const target: any = {};
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
@@ -101,6 +115,11 @@ export class ModelMapper<T> {
     if (type === 'Moment.Duration') return moment.isDuration(value) ? value.toISOString() : value;
     if (type === Date) return value.toISOString();
     if (type) {
+      const discriminator = registeredDiscriminator[type as any];
+      if (discriminator?.length) {
+        const extended = find(discriminator, entry => isEqual(value[entry.key], entry.value));
+        if (extended) return new ModelMapper(extended.target).serialize(value);
+      }
       return new ModelMapper(type as new () => any).serialize(value);
     }
     return value;
@@ -116,7 +135,7 @@ export class ModelMapper<T> {
       const discriminator = registeredDiscriminator[type as any];
       if (discriminator?.length) {
         const extended = find(discriminator, entry => isEqual(value[entry.key], entry.value));
-        if (extended) return new ModelMapper(extended.target as new () => any).map(value);
+        if (extended) return new ModelMapper(extended.target).map(value);
       }
       return new ModelMapper(type as new () => any).map(value);
     }
