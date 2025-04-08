@@ -1,11 +1,12 @@
 {
-  "name": "model-mapper",
-  "version": "6.0.0",
-  "description": "",
+  "name": "@eherve/model-mapper",
+  "version": "6.0.1",
+  "description": "Map json data to javascript object",
   "main": "./lib/main.js",
   "types": "./lib/main.d.ts",
   "directories": {
-    "lib": "lib"
+    "lib": "lib",
+    "test": "test"
   },
   "files": [
     "lib/*"
@@ -18,6 +19,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eherve/model-mapper.git"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
   },
   "author": "Éric Hervé",
   "license": "MIT",
