@@ -1,6 +1,6 @@
 {
   "name": "@eherve/model-mapper",
-  "version": "6.0.1",
+  "version": "6.1.0",
   "description": "Map json data to javascript object",
   "main": "./lib/main.js",
   "types": "./lib/main.d.ts",
