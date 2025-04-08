@@ -1,15 +1,35 @@
 /** @format */
 
-import {expect} from 'chai';
-import {clone, each, merge} from 'lodash';
-import {Duration, Moment} from 'moment';
-import {ModelMapper} from './model-mapper';
-import {propertyMap} from './property-map.decorator';
+import { expect } from 'chai';
+import { clone, cloneDeep, each, merge } from 'lodash';
+import { Duration, Moment } from 'moment';
+import { ModelMapper } from './model-mapper';
+import { propertyMap } from './property-map.decorator';
 import chai = require('chai');
 import moment = require('moment');
+import { Discriminator } from './discriminator.decorator';
+
+class DiscrimenatedClass {
+  @propertyMap()
+  public family: 'DiscrimenatedA' | 'DiscrimenatedB';
+}
+@Discriminator({ key: 'family', value: 'DiscrimenatedA' })
+class DiscrimenatedAClass extends DiscrimenatedClass {
+  override family: 'DiscrimenatedA' = 'DiscrimenatedA';
+
+  @propertyMap()
+  public DiscrimenatedA: string;
+}
+@Discriminator({ key: 'family', value: 'DiscrimenatedB' })
+class DiscrimenatedBClass extends DiscrimenatedClass {
+  override family: 'DiscrimenatedB' = 'DiscrimenatedB';
+
+  @propertyMap()
+  public DiscrimenatedB: string;
+}
 
 class Test {
-  @propertyMap({source: '_id'})
+  @propertyMap({ source: '_id' })
   public id: string;
 
   @propertyMap()
@@ -18,34 +38,34 @@ class Test {
   @propertyMap()
   public noData: string;
 
-  @propertyMap({source: 'info.description'})
+  @propertyMap({ source: 'info.description' })
   public description: string;
 
-  @propertyMap({type: Date})
+  @propertyMap({ type: Date })
   public dateType: Date;
 
-  @propertyMap({type: 'Moment'})
+  @propertyMap({ type: 'Moment' })
   public dateString: Moment;
 
-  @propertyMap({type: 'Moment'})
+  @propertyMap({ type: 'Moment' })
   public dateMoment: Moment;
 
-  @propertyMap({type: 'Moment'})
+  @propertyMap({ type: 'Moment' })
   public date: Moment;
 
-  @propertyMap({type: 'Moment.Duration'})
+  @propertyMap({ type: 'Moment.Duration' })
   public duration: Duration;
 
-  @propertyMap({type: Test})
+  @propertyMap({ type: Test })
   public subTest: Test;
 
-  @propertyMap({type: [Test]})
+  @propertyMap({ type: [Test] })
   public subTests: Test[];
 
-  @propertyMap({source: 'embedeInList.items.model', type: [Test]})
+  @propertyMap({ source: 'embedeInList.items.model', type: [Test] })
   public embedeInList: Test[];
 
-  @propertyMap({source: 'embedeInList.items.model.embedeInEmbedList.items.model', type: [Test]})
+  @propertyMap({ source: 'embedeInList.items.model.embedeInEmbedList.items.model', type: [Test] })
   public embedeInEmbededList: Test[];
 
   @propertyMap({
@@ -54,10 +74,30 @@ class Test {
     },
   })
   public mapData: string;
+
+  @propertyMap({ type: DiscrimenatedClass })
+  discrimenatedClass: DiscrimenatedClass;
 }
+
+// @Discriminator({ key: 'family', value: 'TestA' })
+// class TestA extends Test {
+//   @propertyMap()
+//   public extendedA: string;
+// }
+
+const discrimenatedAClassData = {
+  family: 'DiscrimenatedA',
+  DiscrimenatedA: 'DiscrimenatedA',
+};
+
+const discrimenatedBClassData = {
+  family: 'DiscrimenatedB',
+  DiscrimenatedB: 'DiscrimenatedB',
+};
 
 const data: any = {
   _id: 0,
+  family: 'Test',
   name: 'Test',
   dateType: new Date(),
   dateString: moment().format('YYYY-MM-DD'),
@@ -68,16 +108,18 @@ const data: any = {
   info: {
     description: 'Description',
   },
-  mapData: 'mapData'
+  mapData: 'mapData',
+  discrimenatedClass: cloneDeep(discrimenatedAClassData),
 };
-const subTest = clone(data);
-const subTests = new Array(2).fill(clone(data));
+const subTest = cloneDeep(data);
+const subTests = new Array(2).fill(cloneDeep(data));
 const embedeInList = {
   items: new Array(1).fill({
-    model: merge(clone(data), {
+    model: merge(cloneDeep(data), {
+      discrimenatedClass: cloneDeep(discrimenatedBClassData),
       embedeInEmbedList: {
         items: new Array(2).fill({
-          model: clone(data),
+          model: cloneDeep(data),
         }),
       },
     }),
@@ -88,7 +130,6 @@ data.subTests = subTests;
 data.embedeInList = embedeInList;
 
 const mapped = new ModelMapper(Test).map(data);
-// console.log('mapped', mapped);
 
 function validateTest(testData: any, info?: string) {
   const run = () => {
@@ -135,6 +176,27 @@ function validateTest(testData: any, info?: string) {
     it(`should have "mapData" overrided`, () => {
       expect(testData.mapData).to.be.equals('overrided mapData');
     });
+    it(`should have "discrimenatedClass.family" string property`, () => {
+      expect(testData.discrimenatedClass.family).to.exist;
+    });
+    switch (testData.discrimenatedClass.family) {
+      case 'DiscrimenatedA':
+        it(`should have "discrimenatedClass.DiscrimenatedA" string property`, () => {
+          expect(testData.discrimenatedClass.DiscrimenatedA).to.be.equals('DiscrimenatedA');
+        });
+        it(`should not have "discrimenatedClass.DiscrimenatedB" string property`, () => {
+          expect(testData.discrimenatedClass.DiscrimenatedB).not.exist;
+        });
+        break;
+      case 'DiscrimenatedB':
+        it(`should have "discrimenatedClass.DiscrimenatedB" string property`, () => {
+          expect(testData.discrimenatedClass.DiscrimenatedB).to.be.equals('DiscrimenatedB');
+        });
+        it(`should not have "discrimenatedClass.DiscrimenatedA" string property`, () => {
+          expect(testData.discrimenatedClass.DiscrimenatedA).not.exist;
+        });
+        break;
+    }
   };
   if (info) describe(info, () => run());
   else run();
@@ -150,7 +212,6 @@ describe('ModelMapper Module', () => {
     validateTest(mapped.subTest);
   });
   describe('validate SubModel array properties', () => {
-    console.log(mapped.subTests);
     expect(mapped.subTests).to.not.be.undefined;
     expect(mapped.subTests).to.not.be.null;
     expect(mapped.subTests.length).to.be.gt(0);

@@ -1,12 +1,13 @@
 /** @format */
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
-import {clone, concat, each, get, head, includes, isArray, keys, map, set, split} from 'lodash';
+import { clone, concat, each, find, get, head, includes, isArray, isEqual, keys, map, set, split } from 'lodash';
 import * as moment from 'moment';
 import 'reflect-metadata';
-import {IMappedEntity} from './mapped-entity.interface';
-import {IPropertyMapOptions, PropertyMapOptionsType} from './property-map-options.interface';
-import {PropertyMappingTree} from './property-mapping-tree.interface';
+import { IMappedEntity } from './mapped-entity.interface';
+import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
+import { PropertyMappingTree } from './property-mapping-tree.interface';
+import { registeredDiscriminator } from './discriminator.decorator';
 
 export class ModelMapper<T> {
   get type(): new () => T {
@@ -15,7 +16,7 @@ export class ModelMapper<T> {
   private _type: new () => T;
 
   protected target: any;
-  protected propertyMapping: {[key: string]: IPropertyMapOptions};
+  protected propertyMapping: { [key: string]: IPropertyMapOptions };
 
   constructor(type: new () => T) {
     this._type = type;
@@ -99,7 +100,9 @@ export class ModelMapper<T> {
     if (type === 'Moment') return moment.isMoment(value) ? value.toISOString() : value;
     if (type === 'Moment.Duration') return moment.isDuration(value) ? value.toISOString() : value;
     if (type === Date) return value.toISOString();
-    if (type) return new ModelMapper(type as new () => any).serialize(value);
+    if (type) {
+      return new ModelMapper(type as new () => any).serialize(value);
+    }
     return value;
   }
 
@@ -109,7 +112,14 @@ export class ModelMapper<T> {
     if (type === 'Moment') return this.buildMoment(value);
     if (type === 'Moment.Duration') return this.buildMomentDuration(value);
     if (type === Date) return new Date(value);
-    if (type) return new ModelMapper(type as new () => any).map(value);
+    if (type) {
+      const discriminator = registeredDiscriminator[type as any];
+      if (discriminator?.length) {
+        const extended = find(discriminator, entry => isEqual(value[entry.key], entry.value));
+        if (extended) return new ModelMapper(extended.target as new () => any).map(value);
+      }
+      return new ModelMapper(type as new () => any).map(value);
+    }
     return value;
   }
 
