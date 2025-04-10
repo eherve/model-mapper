@@ -17,6 +17,8 @@ export declare class ModelMapper<T> {
     private buildSerializeValue;
     private getSerializeValue;
     private getMapValue;
+    private getPropertyTypeConstructor;
+    private getTypeConstructor;
     private buildMoment;
     private buildMomentDuration;
     getPropertyMappingTree(): PropertyMappingTree;
