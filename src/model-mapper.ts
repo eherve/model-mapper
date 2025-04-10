@@ -1,13 +1,12 @@
 /** @format */
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
-import { clone, concat, each, find, get, head, includes, isArray, isEqual, keys, map, set, split } from 'lodash';
+import { clone, concat, each, get, head, includes, isArray, keys, map, set, split } from 'lodash';
 import * as moment from 'moment';
 import 'reflect-metadata';
 import { IMappedEntity } from './mapped-entity.interface';
-import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
+import { ConstructorType, IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
 import { PropertyMappingTree } from './property-mapping-tree.interface';
-import { registeredDiscriminator } from './discriminator.decorator';
 
 export class ModelMapper<T> {
   get type(): new () => T {
@@ -30,16 +29,14 @@ export class ModelMapper<T> {
   public map<R extends T>(source?: any): R & IMappedEntity {
     if (!source) return;
 
-    const discriminator = registeredDiscriminator[this.type as any];
-    if (discriminator?.length) {
-      const extended = find(discriminator, entry => isEqual(source[entry.key], entry.value));
-      if (extended) return new ModelMapper(extended.target).map(source);
-    }
+    // TODO
+    // const extended = this.getExtended(this.type, source);
+    // if (extended) return new ModelMapper(extended).map(source);
 
     const target = clone(this.target);
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
-      const mapValue = this.buildMapValue(mapping.type, mapping.source, source);
+      const mapValue = this.buildMapValue(mapping, mapping.source, source);
       let value: any;
       if (typeof mapping.map === 'function') value = mapping.map(source, mapValue, target, mapping.source);
       else value = mapValue;
@@ -55,16 +52,14 @@ export class ModelMapper<T> {
   public serialize(source?: T): any {
     if (!source) return;
 
-    const discriminator = registeredDiscriminator[this.type as any];
-    if (discriminator?.length) {
-      const extended = find(discriminator, entry => isEqual((source as any)[entry.key], entry.value)); // TODO if source
-      if (extended) return new ModelMapper(extended.target).serialize(source);
-    }
+    // TODO
+    // const extended = this.getExtended(this.type, source); // TODO if source !=
+    // if (extended) return new ModelMapper(extended).serialize(source);
 
     const target: any = {};
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
-      const serializeValue = this.buildSerializeValue(mapping.type, source, property);
+      const serializeValue = this.buildSerializeValue(mapping, source, property);
       let value: any;
       if (typeof mapping.serialize === 'function') value = mapping.serialize(source, serializeValue, target, property);
       else value = serializeValue;
@@ -73,73 +68,78 @@ export class ModelMapper<T> {
     return target;
   }
 
-  private buildMapValue(type: PropertyMapOptionsType | PropertyMapOptionsType[], pathString: string, source: any): any {
+  private buildMapValue(mapping: IPropertyMapOptions, pathString: string, source: any): any {
     let path = split(pathString, '.');
     let data = source;
     while (path.length) {
       data = get(data, path[0]);
       path.splice(0, 1);
       if (path.length && isArray(data)) {
-        return concat(...map(data, d => this.buildMapValue(type, path.join('.'), d)));
+        return concat(...map(data, d => this.buildMapValue(mapping, path.join('.'), d)));
       }
     }
-    if (Array.isArray(type)) {
-      const arrayType = (type as PropertyMapOptionsType[])[0];
-      return Array.isArray(data) ? map(data, d => this.getMapValue(arrayType, d)) : this.getMapValue(arrayType, data);
-    } else {
-      return this.getMapValue(type, data);
-    }
+    if (Array.isArray(mapping.type) && Array.isArray(data)) return map(data, d => this.getMapValue(mapping, d));
+    return this.getMapValue(mapping, data);
   }
 
-  private buildSerializeValue(
-    type: PropertyMapOptionsType | PropertyMapOptionsType[],
-    source: any,
-    property: string
-  ): any {
-    if (Array.isArray(type)) {
+  private buildSerializeValue(mapping: IPropertyMapOptions, source: any, property: string): any {
+    if (Array.isArray(mapping.type)) {
       const data = get(source, property);
       if (!data) return data;
-      const arrayType = (type as PropertyMapOptionsType[])[0];
       return Array.isArray(data)
-        ? map(data, d => this.getSerializeValue(arrayType, d))
-        : this.getSerializeValue(arrayType, data);
+        ? map(data, d => this.getSerializeValue(mapping, d))
+        : this.getSerializeValue(mapping, data);
     } else {
-      return this.getSerializeValue(type, get(source, property));
+      return this.getSerializeValue(mapping, get(source, property));
     }
   }
 
-  private getSerializeValue(type: PropertyMapOptionsType, value: any) {
+  private getSerializeValue(mapping: IPropertyMapOptions, value: any) {
+    const type = Array.isArray(mapping.type) ? mapping.type[0] : mapping.type;
     if (value === undefined) return undefined;
     if (value === null) return null;
     if (type === 'Moment') return moment.isMoment(value) ? value.toISOString() : value;
     if (type === 'Moment.Duration') return moment.isDuration(value) ? value.toISOString() : value;
-    if (type === Date) return value.toISOString();
-    if (type) {
-      const discriminator = registeredDiscriminator[type as any];
-      if (discriminator?.length) {
-        const extended = find(discriminator, entry => isEqual(value[entry.key], entry.value));
-        if (extended) return new ModelMapper(extended.target).serialize(value);
-      }
-      return new ModelMapper(type as new () => any).serialize(value);
-    }
+    if (type === Date || type instanceof Date) return value.toISOString();
+    if (type) return this.getPropertyTypeConstructor(mapping, type, value).serialize(value);
     return value;
   }
 
-  private getMapValue(type: PropertyMapOptionsType, value: any) {
+  private getMapValue(mapping: IPropertyMapOptions, value: any) {
+    const type = Array.isArray(mapping.type) ? mapping.type[0] : mapping.type;
     if (value === undefined) return undefined;
     if (value === null) return null;
     if (type === 'Moment') return this.buildMoment(value);
     if (type === 'Moment.Duration') return this.buildMomentDuration(value);
-    if (type === Date) return new Date(value);
-    if (type) {
-      const discriminator = registeredDiscriminator[type as any];
-      if (discriminator?.length) {
-        const extended = find(discriminator, entry => isEqual(value[entry.key], entry.value));
-        if (extended) return new ModelMapper(extended.target).map(value);
-      }
-      return new ModelMapper(type as new () => any).map(value);
-    }
+    if (type === Date || type instanceof Date) return new Date(value);
+    if (type === String) return new String(value);
+    if (type === Number) return new Number(value);
+    if (type) return this.getPropertyTypeConstructor(mapping, type, value).map(value);
     return value;
+  }
+
+  private getPropertyTypeConstructor(
+    mapping: IPropertyMapOptions,
+    type: ConstructorType,
+    value: any
+  ): ModelMapper<ConstructorType> {
+    const disciminators = mapping.disciminators || (type as any).__modelOptions?.disciminators;
+    if (!disciminators) return new ModelMapper(type);
+    return this.getTypeConstructor(disciminators, type, value);
+  }
+
+  private getTypeConstructor(
+    disciminators: { [key: string]: ConstructorType },
+    type: ConstructorType,
+    value: any
+  ): ModelMapper<ConstructorType> {
+    const discriminatorKey = (type as any).__modelOptions?.discriminatorKey;
+    if (!discriminatorKey) return new ModelMapper(type);
+    // console.log('\ndiscriminator', `${discriminatorKey}:${value[discriminatorKey]}`);
+    const typeConstructor = disciminators[value[discriminatorKey]];
+    if (!typeConstructor) return new ModelMapper(type);
+    // console.log('typeConstructor', typeConstructor);
+    return new ModelMapper(typeConstructor);
   }
 
   private buildMoment(value: any): moment.Moment {

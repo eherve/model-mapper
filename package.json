@@ -1,6 +1,6 @@
 {
   "name": "@eherve/model-mapper",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "description": "Map json data to javascript object",
   "main": "./lib/main.js",
   "types": "./lib/main.d.ts",
@@ -33,7 +33,7 @@
   "dependencies": {
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.14",

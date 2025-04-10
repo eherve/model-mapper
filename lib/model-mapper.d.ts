@@ -11,7 +11,7 @@ export declare class ModelMapper<T> {
         [key: string]: IPropertyMapOptions;
     };
     constructor(type: new () => T);
-    map(source?: any): T & IMappedEntity;
+    map<R extends T>(source?: any): R & IMappedEntity;
     serialize(source?: T): any;
     private buildMapValue;
     private buildSerializeValue;
