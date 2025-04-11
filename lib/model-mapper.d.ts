@@ -1,16 +1,19 @@
 /** @format */
 import 'reflect-metadata';
 import { IMappedEntity } from './mapped-entity.interface';
-import { IPropertyMapOptions } from './property-map-options.interface';
+import { IPropertyMapOptions } from './property-map.decorator';
 import { PropertyMappingTree } from './property-mapping-tree.interface';
+import { Discriminators } from './types';
 export declare class ModelMapper<T> {
-    get type(): new () => T;
     private _type;
+    protected discriminators?: Discriminators;
+    get type(): new () => T;
     protected target: any;
     protected propertyMapping: {
         [key: string]: IPropertyMapOptions;
     };
-    constructor(type: new () => T);
+    protected discriminatorKey?: string;
+    constructor(_type: new () => T, discriminators?: Discriminators);
     map<R extends T>(source?: any): R & IMappedEntity;
     serialize(source?: T): any;
     private buildMapValue;
@@ -18,7 +21,6 @@ export declare class ModelMapper<T> {
     private getSerializeValue;
     private getMapValue;
     private getPropertyTypeConstructor;
-    private getTypeConstructor;
     private buildMoment;
     private buildMomentDuration;
     getPropertyMappingTree(): PropertyMappingTree;

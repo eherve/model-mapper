@@ -5,21 +5,22 @@ import { clone, concat, each, get, head, includes, isArray, keys, map, set, spli
 import * as moment from 'moment';
 import 'reflect-metadata';
 import { IMappedEntity } from './mapped-entity.interface';
-import { ConstructorType, IPropertyMapOptions, PropertyMapOptionsType } from './property-map-options.interface';
+import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map.decorator';
 import { PropertyMappingTree } from './property-mapping-tree.interface';
+import { ConstructorType, Discriminators } from './types';
 
 export class ModelMapper<T> {
   get type(): new () => T {
     return this._type;
   }
-  private _type: new () => T;
 
   protected target: any;
   protected propertyMapping: { [key: string]: IPropertyMapOptions };
+  protected discriminatorKey?: string;
 
-  constructor(type: new () => T) {
-    this._type = type;
-    this.target = new type();
+  constructor(private _type: new () => T, protected discriminators?: Discriminators) {
+    this.target = new this._type();
+    this.discriminatorKey = (this._type as any).__modelOptions?.discriminatorKey;
     this.propertyMapping = Reflect.getOwnMetadata('propertyMap', Object.getPrototypeOf(this.target)) || {};
     this.target.constructor.prototype.getPropertyMapping = () => {
       return this.propertyMapping;
@@ -29,9 +30,10 @@ export class ModelMapper<T> {
   public map<R extends T>(source?: any): R & IMappedEntity {
     if (!source) return;
 
-    // TODO
-    // const extended = this.getExtended(this.type, source);
-    // if (extended) return new ModelMapper(extended).map(source);
+    if (this.discriminatorKey && this.discriminators) {
+      const typeConstructor = this.discriminators[source[this.discriminatorKey]];
+      if (typeConstructor) return new ModelMapper(typeConstructor).map(source);
+    }
 
     const target = clone(this.target);
     Object.keys(this.propertyMapping).forEach(property => {
@@ -52,9 +54,10 @@ export class ModelMapper<T> {
   public serialize(source?: T): any {
     if (!source) return;
 
-    // TODO
-    // const extended = this.getExtended(this.type, source); // TODO if source !=
-    // if (extended) return new ModelMapper(extended).serialize(source);
+    if (this.discriminatorKey && this.discriminators) {
+      const typeConstructor = this.discriminators[(source as any)[this.discriminatorKey]];
+      if (typeConstructor) return new ModelMapper(typeConstructor).serialize(source);
+    }
 
     const target: any = {};
     Object.keys(this.propertyMapping).forEach(property => {
@@ -123,22 +126,12 @@ export class ModelMapper<T> {
     type: ConstructorType,
     value: any
   ): ModelMapper<ConstructorType> {
-    const disciminators = mapping.disciminators || (type as any).__modelOptions?.disciminators;
-    if (!disciminators) return new ModelMapper(type);
-    return this.getTypeConstructor(disciminators, type, value);
-  }
-
-  private getTypeConstructor(
-    disciminators: { [key: string]: ConstructorType },
-    type: ConstructorType,
-    value: any
-  ): ModelMapper<ConstructorType> {
+    const discriminators = mapping.discriminators;
+    if (!discriminators) return new ModelMapper(type);
     const discriminatorKey = (type as any).__modelOptions?.discriminatorKey;
     if (!discriminatorKey) return new ModelMapper(type);
-    // console.log('\ndiscriminator', `${discriminatorKey}:${value[discriminatorKey]}`);
-    const typeConstructor = disciminators[value[discriminatorKey]];
+    const typeConstructor = discriminators[value[discriminatorKey]];
     if (!typeConstructor) return new ModelMapper(type);
-    // console.log('typeConstructor', typeConstructor);
     return new ModelMapper(typeConstructor);
   }
 

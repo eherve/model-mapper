@@ -1,13 +1,13 @@
 /** @format */
 
 import { expect } from 'chai';
-import { clone, cloneDeep, each, isEqual, merge } from 'lodash';
+import { cloneDeep, each, merge } from 'lodash';
 import { Duration, Moment } from 'moment';
 import { ModelMapper } from './model-mapper';
+import { Model } from './model.decorator';
 import { propertyMap } from './property-map.decorator';
 import chai = require('chai');
 import moment = require('moment');
-import { Model } from './model.decorator';
 
 @Model({ discriminatorKey: 'family' })
 class DiscrimenatedClass {
@@ -83,7 +83,7 @@ class Test {
 
   @propertyMap({
     type: DiscrimenatedClass,
-    disciminators: {
+    discriminators: {
       DiscrimenatedA: DiscrimenatedAClass,
       DiscrimenatedB: DiscrimenatedBClass,
     },
@@ -143,7 +143,7 @@ data.embedeInList = embedeInList;
 
 const mapped = new ModelMapper(Test).map(data);
 // const serialized = new ModelMapper(Test).serialize(mapped); // TODO validate serialize
-const discriminated = new ModelMapper(Test).map<DiscriminatedTest>(
+const discriminated = new ModelMapper(Test, { DiscriminatedTest }).map<DiscriminatedTest>(
   merge(cloneDeep(data), { family: 'DiscriminatedTest' })
 );
 
@@ -193,23 +193,23 @@ function validateMap(testData: any, info?: string) {
       expect(testData.mapData).to.be.equals('overrided mapData');
     });
     it(`should have "discrimenatedClass.family" string property`, () => {
-      expect(testData.discrimenatedClass.family).to.exist;
+      expect(testData.discrimenatedClass?.family).to.exist;
     });
-    switch (testData.discrimenatedClass.family) {
+    switch (testData.discrimenatedClass?.family) {
       case 'DiscrimenatedA':
         it(`should have "discrimenatedClass.DiscrimenatedA" string property`, () => {
-          expect(testData.discrimenatedClass.DiscrimenatedA).to.be.equals('DiscrimenatedA');
+          expect(testData.discrimenatedClass?.DiscrimenatedA).to.be.equals('DiscrimenatedA');
         });
         it(`should not have "discrimenatedClass.DiscrimenatedB" string property`, () => {
-          expect(testData.discrimenatedClass.DiscrimenatedB).not.exist;
+          expect(testData.discrimenatedClass?.DiscrimenatedB).not.exist;
         });
         break;
       case 'DiscrimenatedB':
         it(`should have "discrimenatedClass.DiscrimenatedB" string property`, () => {
-          expect(testData.discrimenatedClass.DiscrimenatedB).to.be.equals('DiscrimenatedB');
+          expect(testData.discrimenatedClass?.DiscrimenatedB).to.be.equals('DiscrimenatedB');
         });
         it(`should not have "discrimenatedClass.DiscrimenatedA" string property`, () => {
-          expect(testData.discrimenatedClass.DiscrimenatedA).not.exist;
+          expect(testData.discrimenatedClass?.DiscrimenatedA).not.exist;
         });
         break;
     }
@@ -248,33 +248,33 @@ describe('ModelMapper Module', () => {
       each(mapped.embedeInEmbededList, (d, i) => validateMap(d, `In Array SubModel Array [${i}]`));
     });
   });
-  // describe('DiscriminatedTest', () => {
-  //   describe('validate properties', () => {
-  //     it(`should have "extendedA" string property`, () => expect(discriminated.extendedA).to.be.equals(data.extendedA));
-  //     validateMap(discriminated);
-  //   });
-  //   describe('validate SubModel properties', () => {
-  //     expect(discriminated.subTest).to.not.be.undefined;
-  //     expect(discriminated.subTest).to.not.be.null;
-  //     validateMap(discriminated.subTest);
-  //   });
-  //   describe('validate SubModel array properties', () => {
-  //     expect(discriminated.subTests).to.not.be.undefined;
-  //     expect(discriminated.subTests).to.not.be.null;
-  //     expect(discriminated.subTests.length).to.be.gt(0);
-  //     each(discriminated.subTests, (d, i) => validateMap(d, `SubModel [${i}]`));
-  //   });
-  //   describe('validate SubModel in array properties', () => {
-  //     expect(discriminated.embedeInList).to.not.be.undefined;
-  //     expect(discriminated.embedeInList).to.not.be.null;
-  //     expect(discriminated.embedeInList.length).to.be.gt(0);
-  //     each(discriminated.embedeInList, (d, i) => validateMap(d, `In Array SubModel [${i}]`));
-  //   });
-  //   describe('validate SubModel in array of SubModel properties', () => {
-  //     expect(discriminated.embedeInEmbededList).to.not.be.undefined;
-  //     expect(discriminated.embedeInEmbededList).to.not.be.null;
-  //     expect(discriminated.embedeInEmbededList.length).to.be.gt(0);
-  //     each(discriminated.embedeInEmbededList, (d, i) => validateMap(d, `In Array SubModel Array [${i}]`));
-  //   });
-  // });
+  describe('DiscriminatedTest', () => {
+    describe('validate properties', () => {
+      it(`should have "extendedA" string property`, () => expect(discriminated.extendedA).to.be.equals(data.extendedA));
+      validateMap(discriminated);
+    });
+    describe('validate SubModel properties', () => {
+      expect(discriminated.subTest).to.not.be.undefined;
+      expect(discriminated.subTest).to.not.be.null;
+      validateMap(discriminated.subTest);
+    });
+    describe('validate SubModel array properties', () => {
+      expect(discriminated.subTests).to.not.be.undefined;
+      expect(discriminated.subTests).to.not.be.null;
+      expect(discriminated.subTests.length).to.be.gt(0);
+      each(discriminated.subTests, (d, i) => validateMap(d, `SubModel [${i}]`));
+    });
+    describe('validate SubModel in array properties', () => {
+      expect(discriminated.embedeInList).to.not.be.undefined;
+      expect(discriminated.embedeInList).to.not.be.null;
+      expect(discriminated.embedeInList.length).to.be.gt(0);
+      each(discriminated.embedeInList, (d, i) => validateMap(d, `In Array SubModel [${i}]`));
+    });
+    describe('validate SubModel in array of SubModel properties', () => {
+      expect(discriminated.embedeInEmbededList).to.not.be.undefined;
+      expect(discriminated.embedeInEmbededList).to.not.be.null;
+      expect(discriminated.embedeInEmbededList.length).to.be.gt(0);
+      each(discriminated.embedeInEmbededList, (d, i) => validateMap(d, `In Array SubModel Array [${i}]`));
+    });
+  });
 });

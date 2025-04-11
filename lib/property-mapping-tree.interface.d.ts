@@ -1,5 +1,5 @@
 /** @format */
-import { IPropertyMapOptions } from './property-map-options.interface';
+import { IPropertyMapOptions } from './property-map.decorator';
 export interface IPropertyMappingTreeElmt extends IPropertyMapOptions {
     propertyMapping?: PropertyMappingTree;
 }

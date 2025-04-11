@@ -1,17 +1,16 @@
 /** @format */
 
 import 'reflect-metadata';
-import { ConstructorType } from './property-map-options.interface';
+import { ConstructorType } from './types';
+
+type ClassDecorator = (target: ConstructorType) => ConstructorType;
 
 export type ModelOptions = {
   discriminatorKey?: string;
-  disciminators?: {
-    [key: string]: ConstructorType;
-  };
 };
 
 export function Model(options: ModelOptions): ClassDecorator {
-  return function <TFunction extends Function>(target: TFunction) {
+  return function (target: ConstructorType) {
     (target as any).__modelOptions = options;
     return target;
   };
