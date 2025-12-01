@@ -35,7 +35,7 @@ export class ModelMapper<T> {
       if (typeConstructor) return new ModelMapper(typeConstructor).map(source);
     }
 
-    const target = clone(this.target);
+    const target = Object.assign(new this._type(), this.target);
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
       const mapValue = this.buildMapValue(mapping, mapping.source, source);
