@@ -103,7 +103,7 @@ export class ModelMapper<T> {
     if (value === null) return null;
     if (type === 'Moment') return moment.isMoment(value) ? value.toISOString() : value;
     if (type === 'Moment.Duration') return moment.isDuration(value) ? value.toISOString() : value;
-    if (type === Date || type instanceof Date) return value.toISOString();
+    if (type === Date || type instanceof Date) return typeof value?.toISOString === 'function' ? value.toISOString() : value;
     if (type) return this.getPropertyTypeConstructor(mapping, type, value).serialize(value);
     return value;
   }
