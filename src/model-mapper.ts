@@ -2,14 +2,14 @@
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
 import { clone, concat, each, get, head, includes, isArray, keys, map, set, split } from 'lodash';
-import * as moment from 'moment';
+import moment = require('moment');
 import 'reflect-metadata';
 import { IMappedEntity } from './mapped-entity.interface';
-import { IPropertyMapOptions, PropertyMapOptionsType } from './property-map.decorator';
+import { getPropertyMapping, IPropertyMapOptions, PropertyMapOptionsType } from './property-map.decorator';
 import { PropertyMappingTree } from './property-mapping-tree.interface';
 import { ConstructorType, Discriminators } from './types';
 
-export class ModelMapper<T> {
+export class ModelMapper<T extends object> {
   get type(): new () => T {
     return this._type;
   }
@@ -21,26 +21,30 @@ export class ModelMapper<T> {
   constructor(private _type: new () => T, protected discriminators?: Discriminators) {
     this.target = new this._type();
     this.discriminatorKey = (this._type as any).__modelOptions?.discriminatorKey;
-    this.propertyMapping = Reflect.getOwnMetadata('propertyMap', Object.getPrototypeOf(this.target)) || {};
+    this.propertyMapping = getPropertyMapping(Object.getPrototypeOf(this.target));
     this.target.constructor.prototype.getPropertyMapping = () => {
       return this.propertyMapping;
     };
   }
 
-  public map<R extends T>(source?: any): R & IMappedEntity {
-    if (!source) return;
+  public map<R extends T>(): undefined;
+  public map<R extends T>(source: null | undefined): undefined;
+  public map<R extends T>(source: any): R & IMappedEntity;
+  public map<R extends T>(source?: any): (R & IMappedEntity) | undefined {
+    if (!source) return undefined;
 
     if (this.discriminatorKey && this.discriminators) {
       const typeConstructor = this.discriminators[source[this.discriminatorKey]];
-      if (typeConstructor) return new ModelMapper(typeConstructor).map(source);
+      if (typeConstructor) return new ModelMapper(typeConstructor).map(source) as R & IMappedEntity;
     }
 
-    const target = Object.assign(new this._type(), this.target);
+    const target: any = Object.assign(new this._type(), this.target);
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
-      const mapValue = this.buildMapValue(mapping, mapping.source, source);
+      const sourcePath = mapping.source ?? property;
+      const mapValue = this.buildMapValue(mapping, sourcePath, source);
       let value: any;
-      if (typeof mapping.map === 'function') value = mapping.map(source, mapValue, target, mapping.source);
+      if (typeof mapping.map === 'function') value = mapping.map(source, mapValue, target, sourcePath);
       else value = mapValue;
       if (value !== undefined) target[property] = value;
       if (mapping.default !== undefined && target[property] === undefined) {
@@ -48,7 +52,7 @@ export class ModelMapper<T> {
       }
     });
     if (typeof target.afterMapping === 'function') target.afterMapping();
-    return target;
+    return target as R & IMappedEntity;
   }
 
   public serialize(source?: T): any {
@@ -62,11 +66,12 @@ export class ModelMapper<T> {
     const target: any = {};
     Object.keys(this.propertyMapping).forEach(property => {
       const mapping = this.propertyMapping[property];
+      const sourcePath = mapping.source ?? property;
       const serializeValue = this.buildSerializeValue(mapping, source, property);
       let value: any;
       if (typeof mapping.serialize === 'function') value = mapping.serialize(source, serializeValue, target, property);
       else value = serializeValue;
-      if (value !== undefined) set(target, mapping.source, value);
+      if (value !== undefined) set(target, sourcePath, value);
     });
     return target;
   }
@@ -125,7 +130,7 @@ export class ModelMapper<T> {
     mapping: IPropertyMapOptions,
     type: ConstructorType,
     value: any
-  ): ModelMapper<ConstructorType> {
+  ): ModelMapper<any> {
     const discriminators = mapping.discriminators;
     if (!discriminators) return new ModelMapper(type);
     const discriminatorKey = (type as any).__modelOptions?.discriminatorKey;
@@ -135,11 +140,11 @@ export class ModelMapper<T> {
     return new ModelMapper(typeConstructor);
   }
 
-  private buildMoment(value: any): moment.Moment {
+  private buildMoment(value: any): moment.Moment | undefined {
     return value ? (moment.isMoment(value) ? value : moment(value)) : undefined;
   }
 
-  private buildMomentDuration(value: any): moment.Duration {
+  private buildMomentDuration(value: any): moment.Duration | undefined {
     return value ? (moment.isDuration(value) ? value : moment.duration(value)) : undefined;
   }
 

@@ -1,6 +1,6 @@
 /** @format */
 
-import { clone, merge } from 'lodash';
+import { cloneDeep, merge } from 'lodash';
 import 'reflect-metadata';
 import { ConstructorType, Discriminators } from './types';
 
@@ -21,14 +21,43 @@ export interface IPropertyMapOptions {
   metadata?: any;
 }
 
+export type PropertyMapping = { [key: string]: IPropertyMapOptions };
+
+const PROPERTY_MAP_METADATA_KEY = 'propertyMap';
+
+export function getPropertyMapping(target: Object): PropertyMapping {
+  const prototypes: Object[] = [];
+  let prototype: Object | null = target;
+
+  while (prototype && prototype !== Object.prototype) {
+    prototypes.unshift(prototype);
+    prototype = Object.getPrototypeOf(prototype);
+  }
+
+  return prototypes.reduce<PropertyMapping>((propertyMapping, currentPrototype) => {
+    const ownMetadata = Reflect.getOwnMetadata(PROPERTY_MAP_METADATA_KEY, currentPrototype) as
+      | PropertyMapping
+      | undefined;
+    if (!ownMetadata) return propertyMapping;
+
+    Object.keys(ownMetadata).forEach(property => {
+      propertyMapping[property] = {
+        ...cloneDeep(propertyMapping[property] || {}),
+        ...cloneDeep(ownMetadata[property]),
+      };
+    });
+    return propertyMapping;
+  }, {} as PropertyMapping);
+}
+
 export function propertyMap(options: IPropertyMapOptions = {}): PropertyDecorator {
   return function (target: Object, propertyKey: string | symbol) {
     let ownMetadata: { [key: string | symbol]: IPropertyMapOptions };
-    if (!Reflect.hasOwnMetadata('propertyMap', target)) {
-      ownMetadata = clone(Reflect.getMetadata('propertyMap', target) || {});
-      Reflect.defineMetadata('propertyMap', ownMetadata, target);
+    if (!Reflect.hasOwnMetadata(PROPERTY_MAP_METADATA_KEY, target)) {
+      ownMetadata = cloneDeep(Reflect.getMetadata(PROPERTY_MAP_METADATA_KEY, target) || {});
+      Reflect.defineMetadata(PROPERTY_MAP_METADATA_KEY, ownMetadata, target);
     } else {
-      ownMetadata = Reflect.getOwnMetadata('propertyMap', target);
+      ownMetadata = Reflect.getOwnMetadata(PROPERTY_MAP_METADATA_KEY, target);
     }
     ownMetadata[propertyKey] = merge({ source: propertyKey }, options);
   };
