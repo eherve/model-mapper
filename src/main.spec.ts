@@ -145,7 +145,7 @@ const mapped = new ModelMapper(Test).map(data);
 // const serialized = new ModelMapper(Test).serialize(mapped); // TODO validate serialize
 const discriminated = new ModelMapper(Test, { DiscriminatedTest }).map<DiscriminatedTest>(
   merge(cloneDeep(data), { family: 'DiscriminatedTest' })
-);
+)!;
 
 function validateMap(testData: any, info?: string) {
   const run = () => {

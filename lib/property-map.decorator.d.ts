@@ -12,6 +12,10 @@ export interface IPropertyMapOptions {
     serialize?: (source: any, value: any, target: any, property: string) => any;
     metadata?: any;
 }
+export declare type PropertyMapping = {
+    [key: string]: IPropertyMapOptions;
+};
+export declare function getPropertyMapping(target: Object): PropertyMapping;
 export declare function propertyMap(options?: IPropertyMapOptions): PropertyDecorator;
 export declare const PropertyMap: typeof propertyMap;
 export {};

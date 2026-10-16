@@ -9,11 +9,13 @@
     "test": "test"
   },
   "files": [
-    "lib/*"
+    "lib/*",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "rm -f lib/* && tsc -d -p ./tsconfig.build.json",
-    "test": "tsc -p ./tsconfig.test.json && c8 mocha -R spec test/**.spec.js",
+    "test": "npm run build && tsc -p ./tsconfig.test.json && node scripts/check-package.js && node scripts/coverage.js",
     "prepare": "npm run build"
   },
   "repository": {

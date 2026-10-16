@@ -1,7 +1,7 @@
 /** @format */
 
 // tslint:disable: variable-name space-before-function-paren only-arrow-functions
-import { clone, concat, each, get, head, includes, isArray, keys, map, set, split } from 'lodash';
+import { cloneDeep, concat, each, get, head, includes, isArray, keys, map, set, split } from 'lodash';
 import moment = require('moment');
 import 'reflect-metadata';
 import { IMappedEntity } from './mapped-entity.interface';
@@ -9,7 +9,17 @@ import { getPropertyMapping, IPropertyMapOptions, PropertyMapOptionsType } from 
 import { PropertyMappingTree } from './property-mapping-tree.interface';
 import { ConstructorType, Discriminators } from './types';
 
-export class ModelMapper<T extends object> {
+type MapResult<R, S> = 0 extends 1 & S
+  ? R & IMappedEntity
+  : unknown extends S
+  ? (R & IMappedEntity) | undefined
+  : [Exclude<S, null | undefined>] extends [never]
+  ? undefined
+  : [Extract<S, null | undefined>] extends [never]
+  ? R & IMappedEntity
+  : (R & IMappedEntity) | undefined;
+
+export class ModelMapper<T> {
   get type(): new () => T {
     return this._type;
   }
@@ -27,9 +37,9 @@ export class ModelMapper<T extends object> {
     };
   }
 
-  public map<R extends T>(): undefined;
-  public map<R extends T>(source: null | undefined): undefined;
-  public map<R extends T>(source: any): R & IMappedEntity;
+  public map(): undefined;
+  public map<R extends T = T>(source: object): R & IMappedEntity;
+  public map<R extends T = T, S = unknown>(source: S): MapResult<R, S>;
   public map<R extends T>(source?: any): (R & IMappedEntity) | undefined {
     if (!source) return undefined;
 
@@ -48,7 +58,7 @@ export class ModelMapper<T extends object> {
       else value = mapValue;
       if (value !== undefined) target[property] = value;
       if (mapping.default !== undefined && target[property] === undefined) {
-        target[property] = typeof mapping.default === 'function' ? mapping.default() : mapping.default;
+        target[property] = typeof mapping.default === 'function' ? mapping.default() : cloneDeep(mapping.default);
       }
     });
     if (typeof target.afterMapping === 'function') target.afterMapping();
